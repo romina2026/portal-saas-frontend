@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/auth.store.js';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Admin() {
-  const token = useAuthStore((s) => s.token);
+  const token = useAuthStore((s) => s.token) || localStorage.getItem('auth-storage') && JSON.parse(localStorage.getItem('auth-storage'))?.state?.token;
   const [tab, setTab] = useState('recibos');
   const [periodo, setPeriodo] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
