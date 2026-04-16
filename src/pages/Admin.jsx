@@ -4,7 +4,27 @@ import { useAuthStore } from '../store/auth.store.js';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Admin() {
-  const token = useAuthStore((s) => s.token) || localStorage.getItem('auth-storage') && JSON.parse(localStorage.getItem('auth-storage'))?.state?.token;
+ const [token, setToken] = useState(null);
+const [loginData, setLoginData] = useState({ legajo: '', password: '' });
+
+if (!token) {
+  return (
+    <div style={{maxWidth:340, margin:'80px auto', padding:'2rem', border:'1px solid #e5e5e5', borderRadius:12, fontFamily:'system-ui'}}>
+      <h2 style={{fontSize:18, marginBottom:'1.5rem'}}>⚙️ Panel Admin</h2>
+      <label style={{fontSize:12, color:'#555'}}>Legajo</label>
+      <input style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:8, marginBottom:8, boxSizing:'border-box'}} value={loginData.legajo} onChange={e=>setLoginData({...loginData, legajo:e.target.value})} />
+      <label style={{fontSize:12, color:'#555'}}>Contraseña</label>
+      <input type="password" style={{width:'100%', padding:'8px', border:'1px solid #ddd', borderRadius:8, marginBottom:12, boxSizing:'border-box'}} value={loginData.password} onChange={e=>setLoginData({...loginData, password:e.target.value})} />
+      <button style={{width:'100%', padding:'10px', background:'#1D9E75', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:14}} onClick={async()=>{
+        const API2 = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const r = await fetch(API2+'/auth/login', {method:'POST', headers:{'Content-Type':'application/json','ngrok-skip-browser-warning':'true'}, body:JSON.stringify(loginData)});
+        const d = await r.json();
+        if(d.token) setToken(d.token);
+        else alert('Legajo o contraseña incorrectos');
+      }}>Ingresar</button>
+    </div>
+  );
+}
   const [tab, setTab] = useState('recibos');
   const [periodo, setPeriodo] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
@@ -16,7 +36,7 @@ export default function Admin() {
   const [resultado, setResultado] = useState(null);
   const [cargando, setCargando] = useState(false);
 
-  const h = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'ngrok-skip-browser-warning':'true' };
+const h = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'ngrok-skip-browser-warning':'true' };
 
   useEffect(() => {
     const d = new Date(); d.setMonth(d.getMonth()-1);
