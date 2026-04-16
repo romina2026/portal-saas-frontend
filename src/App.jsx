@@ -8,6 +8,7 @@ import CuentaCte  from './pages/CuentaCte.jsx';
 import RRHH       from './pages/RRHH.jsx';
 import Fichaje    from './pages/Fichaje.jsx';
 import CambiarPass from './pages/CambiarPass.jsx';
+import Admin from './pages/Admin.jsx';
 import BottomNav  from './components/BottomNav.jsx';
 
 function PrivateRoute({ children }) {
@@ -36,7 +37,7 @@ export default function App() {
       <Route path="/cuenta" element={<PrivateRoute><Layout><CuentaCte /></Layout></PrivateRoute>} />
       <Route path="/rrhh" element={<PrivateRoute><Layout><RRHH /></Layout></PrivateRoute>} />
       <Route path="/fichaje" element={<PrivateRoute><Layout><Fichaje /></Layout></PrivateRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <<Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
