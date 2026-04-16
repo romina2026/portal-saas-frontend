@@ -37,7 +37,7 @@ export default function App() {
       <Route path="/cuenta" element={<PrivateRoute><Layout><CuentaCte /></Layout></PrivateRoute>} />
       <Route path="/rrhh" element={<PrivateRoute><Layout><RRHH /></Layout></PrivateRoute>} />
       <Route path="/fichaje" element={<PrivateRoute><Layout><Fichaje /></Layout></PrivateRoute>} />
-      <<Route path="/admin" element={<Admin />} />Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+     <Route path="/admin" element={<Admin />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
   );
 }
