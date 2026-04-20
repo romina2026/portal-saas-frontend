@@ -30,7 +30,7 @@ export default function Admin() {
     if(tab==='solicitudes') cargarSolicitudes();
   }, [tab, logueado]);
 
-  const H = () => ({'Content-Type':'application/json','Authorization':'Bearer '+token,'ngrok-skip-browser-warning':'true'});
+  const H = () => ({'Content-Type':'application/json','Authorization':'Bearer '+token});
 
   async function login() {
     try {
@@ -38,28 +38,30 @@ export default function Admin() {
       const d = await r.json();
       const t = d.token || d.accessToken;
       if(t) { setToken(t); setLogueado(true); }
-      else alert('Legajo o contraseña incorrectos');
-    } catch(e) { alert('Error de conexión: '+e.message); }
+      else alert('Legajo o contrasena incorrectos');
+    } catch(e) { alert('Error de conexion: '+e.message); }
   }
 
   async function cargarEmpleados() {
     try { const r = await fetch(API+'/admin/empleados', {headers:H()}); setEmpleados(await r.json()); } catch(e) {}
   }
+
   async function cargarSolicitudes() {
     try { const r = await fetch(API+'/admin/solicitudes', {headers:H()}); setSolicitudes(await r.json()); } catch(e) {}
   }
- async function procesarPDF() {
-    if(!pdfFile){setMsg('❌ Seleccioná el PDF primero');return;}
-    if(!periodo){setMsg('❌ Escribí el período');return;}
-    setCargando(true); setMsg('⏳ Leyendo PDF...');
+
+  async function procesarPDF() {
+    if(!pdfFile){setMsg('Selecciona el PDF primero');return;}
+    if(!periodo){setMsg('Escribi el periodo');return;}
+    setCargando(true); setMsg('Leyendo PDF...');
     try {
       const pdfjsLib = await import('pdfjs-dist');
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       const arrayBuffer = await pdfFile.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const totalPags = pdfDoc.getPageCount();
-      setMsg('⏳ Leyendo legajos... ('+totalPags+' páginas)');
+      setMsg('Leyendo legajos... ('+totalPags+' paginas)');
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const pdf = await loadingTask.promise;
       let procesados = 0, saltados = 0, noEncontrados = [];
@@ -69,8 +71,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
         const texto = content.items.map(x => x.str).join(' ');
         const match = texto.match(/Legajo\s*(\d+)/i);
         if(!match){ saltados++; continue; }
-        const legajo = match[1].replace(/^0+/,'') || '0';
-        setMsg('⏳ Procesando legajo '+legajo+'... ('+procesados+' subidos)');
+        const leg = match[1].replace(/^0+/,'') || '0';
+        setMsg('Procesando legajo '+leg+'... ('+procesados+' subidos)');
         const pdfNuevo = await PDFDocument.create();
         const indices = [i, i+1].filter(x => x < totalPags);
         const pags = await pdfNuevo.copyPages(pdfDoc, indices);
@@ -78,8 +80,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
         const pdfEmpBytes = await pdfNuevo.save();
         const blob = new Blob([pdfEmpBytes], {type:'application/pdf'});
         const formData = new FormData();
-        formData.append('pdf', blob, legajo+'.pdf');
-        formData.append('legajo', legajo);
+        formData.append('pdf', blob, leg+'.pdf');
+        formData.append('legajo', leg);
         formData.append('periodo', periodo);
         const r = await fetch(API+'/admin/subir-recibo-individual', {
           method:'POST',
@@ -87,26 +89,26 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
           body: formData
         });
         const data = await r.json();
-        if(data.error){ noEncontrados.push(legajo); saltados++; }
+        if(data.error){ noEncontrados.push(leg); saltados++; }
         else procesados++;
       }
-      setMsg('✅ Completado');
+      setMsg('Completado');
       setResultado({procesados, saltados, totalPaginas: totalPags, noEncontrados});
-    } catch(e){ setMsg('❌ '+e.message); }
+    } catch(e){ setMsg('Error: '+e.message); }
     setCargando(false);
   }
-    reader.readAsDataURL(pdfFile);
-  }
+
   async function guardarEmpleado() {
     try {
       const r = await fetch(API+'/admin/empleados', {method:'POST', headers:H(), body:JSON.stringify(empForm)});
       const data = await r.json();
       if(data.error){alert(data.error);return;}
-      alert('✅ Empleado guardado'); setModalEmp(false);
+      alert('Empleado guardado'); setModalEmp(false);
       setEmpForm({legajo:'',nombre_completo:'',cargo:'',area:'',manager_codigo:'',password:''});
       cargarEmpleados();
     } catch(e){ alert(e.message); }
   }
+
   async function responder(id, estado) {
     const respuesta = prompt('Comentario:') || '';
     try { await fetch(API+'/admin/solicitudes/'+id, {method:'PUT', headers:H(), body:JSON.stringify({estado, respuesta})}); cargarSolicitudes(); } catch(e){}
@@ -127,25 +129,25 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
   if(!logueado) return (
     <div style={{maxWidth:340,margin:'80px auto',padding:'2rem',border:'1px solid #e5e5e5',borderRadius:12,fontFamily:'system-ui'}}>
-      <h2 style={{fontSize:18,marginBottom:'1.5rem'}}>⚙️ Panel Admin</h2>
+      <h2 style={{fontSize:18,marginBottom:'1.5rem'}}>Panel Admin</h2>
       <label style={s.label}>Legajo</label>
       <input style={s.input} value={legajo} onChange={e=>setLegajo(e.target.value)} />
-      <label style={s.label}>Contraseña</label>
+      <label style={s.label}>Contrasena</label>
       <input type="password" style={s.input} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} />
-      <button style={s.btnP} onClick={login} style={{width:'100%',padding:'10px',background:'#1D9E75',color:'#fff',border:'none',borderRadius:8,cursor:'pointer',fontSize:14}}>Ingresar</button>
+      <button onClick={login} style={{width:'100%',padding:'10px',background:'#1D9E75',color:'#fff',border:'none',borderRadius:8,cursor:'pointer',fontSize:14}}>Ingresar</button>
     </div>
   );
 
   return (
     <div style={s.wrap}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
-        <h1 style={{fontSize:20,fontWeight:600}}>⚙️ Panel Admin</h1>
+        <h1 style={{fontSize:20,fontWeight:600}}>Panel Admin</h1>
         <button style={s.btn} onClick={()=>setLogueado(false)}>Salir</button>
       </div>
       <div style={s.tabs}>
         {['recibos','empleados','solicitudes'].map(t=>(
           <div key={t} style={s.tab(tab===t)} onClick={()=>setTab(t)}>
-            {t==='recibos'?'📄 Subir Recibos':t==='empleados'?'👥 Empleados':'📅 Solicitudes'}
+            {t==='recibos'?'Subir Recibos':t==='empleados'?'Empleados':'Solicitudes'}
           </div>
         ))}
       </div>
@@ -153,14 +155,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
       {tab==='recibos' && (
         <div style={s.card}>
           <h3 style={{fontSize:15,marginBottom:'1rem'}}>Subir PDF de recibos</h3>
-          <label style={s.label}>Período (YYYY-MM)</label>
+          <label style={s.label}>Periodo (YYYY-MM)</label>
           <input style={{...s.input,maxWidth:200}} value={periodo} onChange={e=>setPeriodo(e.target.value)} placeholder="2026-03" />
           <label style={s.label}>Archivo PDF</label>
           <input type="file" accept=".pdf" onChange={e=>setPdfFile(e.target.files[0])} style={{marginBottom:12}} />
-          {pdfFile && <div style={{fontSize:12,color:'#1D9E75',marginBottom:8}}>✅ {pdfFile.name}</div>}
+          {pdfFile && <div style={{fontSize:12,color:'#1D9E75',marginBottom:8}}>{pdfFile.name}</div>}
           <br/>
-          <button style={s.btnP} onClick={procesarPDF} disabled={cargando}>{cargando?'⏳ Procesando...':'⚡ Procesar y subir recibos'}</button>
-          {msg && <div style={{marginTop:12,padding:'10px 14px',borderRadius:8,background:msg.startsWith('✅')?'#E1F5EE':'#FCEBEB',color:msg.startsWith('✅')?'#0F6E56':'#A32D2D',fontSize:13}}>{msg}</div>}
+          <button style={s.btnP} onClick={procesarPDF} disabled={cargando}>{cargando?'Procesando...':'Procesar y subir recibos'}</button>
+          {msg && <div style={{marginTop:12,padding:'10px 14px',borderRadius:8,background:msg.startsWith('Error')||msg.startsWith('Selec')||msg.startsWith('Escri')?'#FCEBEB':'#E1F5EE',color:msg.startsWith('Error')||msg.startsWith('Selec')||msg.startsWith('Escri')?'#A32D2D':'#0F6E56',fontSize:13}}>{msg}</div>}
           {resultado && (
             <div style={{marginTop:'1rem',display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
               <div style={{background:'#E1F5EE',borderRadius:8,padding:'1rem',textAlign:'center'}}>
@@ -173,7 +175,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
               </div>
               <div style={{background:'#f0f0f0',borderRadius:8,padding:'1rem',textAlign:'center'}}>
                 <div style={{fontSize:28,fontWeight:700}}>{resultado.totalPaginas}</div>
-                <div style={{fontSize:12}}>Páginas totales</div>
+                <div style={{fontSize:12}}>Paginas totales</div>
               </div>
               {resultado.noEncontrados?.length>0 && <div style={{gridColumn:'1/-1',background:'#FAEEDA',borderRadius:8,padding:'10px',fontSize:12,color:'#854F0B'}}>Legajos no encontrados: {resultado.noEncontrados.join(', ')}</div>}
             </div>
@@ -188,8 +190,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
           </div>
           <div style={s.card}>
             <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Área</th><th style={s.th}>Cod. Manager</th></tr></thead>
-              <tbody>{Array.isArray(empleados)&&empleados.map(e=><tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo||'—'}</td><td style={s.td}>{e.area||'—'}</td><td style={s.td}>{e.manager_codigo||'—'}</td></tr>)}</tbody>
+              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Area</th><th style={s.th}>Cod. Manager</th></tr></thead>
+              <tbody>{Array.isArray(empleados)&&empleados.map(e=><tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo||'-'}</td><td style={s.td}>{e.area||'-'}</td><td style={s.td}>{e.manager_codigo||'-'}</td></tr>)}</tbody>
             </table>
           </div>
           {modalEmp && (
@@ -198,7 +200,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
                 <h3 style={{fontSize:15,marginBottom:'1rem'}}>Agregar empleado</h3>
                 {['legajo','nombre_completo','cargo','area','manager_codigo','password'].map(k=>(
                   <div key={k}>
-                    <label style={s.label}>{k==='nombre_completo'?'Nombre':k==='manager_codigo'?'Cód. Manager':k==='password'?'Contraseña':k}</label>
+                    <label style={s.label}>{k==='nombre_completo'?'Nombre':k==='manager_codigo'?'Cod. Manager':k==='password'?'Contrasena':k}</label>
                     <input style={s.input} value={empForm[k]} onChange={e=>setEmpForm({...empForm,[k]:e.target.value})} />
                   </div>
                 ))}
@@ -220,12 +222,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
               <tr key={s2.id}>
                 <td style={s.td}>{s2.nombre_completo}</td>
                 <td style={s.td}>{s2.tipo}</td>
-                <td style={s.td}>{s2.fecha_inicio?.slice(0,10)||'—'}</td>
-                <td style={s.td}>{s2.motivo||'—'}</td>
+                <td style={s.td}>{s2.fecha_inicio?.slice(0,10)||'-'}</td>
+                <td style={s.td}>{s2.motivo||'-'}</td>
                 <td style={s.td}><span style={{padding:'2px 8px',borderRadius:20,fontSize:11,background:s2.estado==='aprobado'?'#E1F5EE':s2.estado==='rechazado'?'#FCEBEB':'#FAEEDA',color:s2.estado==='aprobado'?'#0F6E56':s2.estado==='rechazado'?'#A32D2D':'#854F0B'}}>{s2.estado}</span></td>
                 <td style={s.td}>
-                  <button style={{...s.btn,marginRight:4,fontSize:11,padding:'3px 8px'}} onClick={()=>responder(s2.id,'aprobado')}>✅</button>
-                  <button style={{...s.btn,fontSize:11,padding:'3px 8px'}} onClick={()=>responder(s2.id,'rechazado')}>❌</button>
+                  <button style={{...s.btn,marginRight:4,fontSize:11,padding:'3px 8px'}} onClick={()=>responder(s2.id,'aprobado')}>Aprobar</button>
+                  <button style={{...s.btn,fontSize:11,padding:'3px 8px'}} onClick={()=>responder(s2.id,'rechazado')}>Rechazar</button>
                 </td>
               </tr>
             ))}</tbody>
