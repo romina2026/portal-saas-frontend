@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
     disable: true,
-      registerType: 'prompt,
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'Portal del Empleado',
