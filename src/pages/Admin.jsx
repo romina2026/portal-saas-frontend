@@ -56,7 +56,7 @@ export default function Admin() {
     setCargando(true); setMsg('Leyendo PDF...');
     try {
       const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.worker.min.js';
+     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
       const arrayBuffer = await pdfFile.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
       const pdfDoc = await PDFDocument.load(pdfBytes);
