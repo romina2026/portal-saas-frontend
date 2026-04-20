@@ -10,7 +10,7 @@ function Login({ onLogin }) {
   async function login() {
     const r = await fetch(API+'/auth/login', {method:'POST', headers:{'Content-Type':'application/json','ngrok-skip-browser-warning':'true'}, body:JSON.stringify({legajo, password})});
     const d = await r.json();
-    if(d.token) onLogin(d.token);
+if(d.token || d.accessToken) setToken(d.token || d.accessToken);
     else alert('Legajo o contraseña incorrectos');
   }
   return (
