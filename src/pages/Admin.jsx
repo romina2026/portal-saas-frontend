@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PDFDocument } from 'pdf-lib';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -47,21 +48,53 @@ export default function Admin() {
   async function cargarSolicitudes() {
     try { const r = await fetch(API+'/admin/solicitudes', {headers:H()}); setSolicitudes(await r.json()); } catch(e) {}
   }
-  async function procesarPDF() {
+ async function procesarPDF() {
     if(!pdfFile){setMsg('❌ Seleccioná el PDF primero');return;}
     if(!periodo){setMsg('❌ Escribí el período');return;}
-    setCargando(true); setMsg('⏳ Procesando... puede tardar unos minutos...');
-    const reader = new FileReader();
-    reader.onload = async(ev) => {
-      const base64 = ev.target.result.split(',')[1];
-      try {
-        const r = await fetch(API+'/admin/subir-recibos', {method:'POST', headers:H(), body:JSON.stringify({pdfBase64:base64, periodo})});
+    setCargando(true); setMsg('⏳ Leyendo PDF...');
+    try {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdfBytes = new Uint8Array(arrayBuffer);
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const totalPags = pdfDoc.getPageCount();
+      setMsg('⏳ Leyendo legajos... ('+totalPags+' páginas)');
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+      const pdf = await loadingTask.promise;
+      let procesados = 0, saltados = 0, noEncontrados = [];
+      for(let i = 0; i < totalPags; i += 2) {
+        const page = await pdf.getPage(i + 1);
+        const content = await page.getTextContent();
+        const texto = content.items.map(x => x.str).join(' ');
+        const match = texto.match(/Legajo\s*(\d+)/i);
+        if(!match){ saltados++; continue; }
+        const legajo = match[1].replace(/^0+/,'') || '0';
+        setMsg('⏳ Procesando legajo '+legajo+'... ('+procesados+' subidos)');
+        const pdfNuevo = await PDFDocument.create();
+        const indices = [i, i+1].filter(x => x < totalPags);
+        const pags = await pdfNuevo.copyPages(pdfDoc, indices);
+        pags.forEach(p => pdfNuevo.addPage(p));
+        const pdfEmpBytes = await pdfNuevo.save();
+        const blob = new Blob([pdfEmpBytes], {type:'application/pdf'});
+        const formData = new FormData();
+        formData.append('pdf', blob, legajo+'.pdf');
+        formData.append('legajo', legajo);
+        formData.append('periodo', periodo);
+        const r = await fetch(API+'/admin/subir-recibo-individual', {
+          method:'POST',
+          headers:{'Authorization':'Bearer '+token},
+          body: formData
+        });
         const data = await r.json();
-        if(data.error) setMsg('❌ '+data.error);
-        else { setMsg('✅ Completado'); setResultado(data); }
-      } catch(e){ setMsg('❌ '+e.message); }
-      setCargando(false);
-    };
+        if(data.error){ noEncontrados.push(legajo); saltados++; }
+        else procesados++;
+      }
+      setMsg('✅ Completado');
+      setResultado({procesados, saltados, totalPaginas: totalPags, noEncontrados});
+    } catch(e){ setMsg('❌ '+e.message); }
+    setCargando(false);
+  }
     reader.readAsDataURL(pdfFile);
   }
   async function guardarEmpleado() {
