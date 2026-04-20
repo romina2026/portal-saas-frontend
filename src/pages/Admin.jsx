@@ -53,8 +53,8 @@ export default function Admin() {
     if(!periodo){setMsg('❌ Escribí el período');return;}
     setCargando(true); setMsg('⏳ Leyendo PDF...');
     try {
-      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      const pdfjsLib = await import('pdfjs-dist');
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
       const arrayBuffer = await pdfFile.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
       const pdfDoc = await PDFDocument.load(pdfBytes);
