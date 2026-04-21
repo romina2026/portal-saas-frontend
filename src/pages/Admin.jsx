@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg';
 
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
   const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
   const [legajo, setLegajo] = useState('001');
   const [password, setPassword] = useState('');
-  const [logueado, setLogueado] = useState(false);
   const [tab, setTab] = useState('recibos');
   const [periodo, setPeriodo] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
@@ -57,7 +58,7 @@ export default function Admin() {
     setCargando(true); setMsg('Leyendo PDF...');
     try {
       const pdfjsLib = await import('pdfjs-dist');
-     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
       const arrayBuffer = await pdfFile.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
       const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -65,6 +66,11 @@ export default function Admin() {
       setMsg('Leyendo legajos... ('+totalPags+' paginas)');
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const pdf = await loadingTask.promise;
+
+      // Cargar lista de empleados una sola vez
+      const empR = await fetch(API+'/admin/empleados', {headers:H()});
+      const empList = await empR.json();
+
       let procesados = 0, saltados = 0, noEncontrados = [];
       for(let i = 0; i < totalPags; i += 2) {
         const page = await pdf.getPage(i + 1);
@@ -74,24 +80,45 @@ export default function Admin() {
         if(!match){ saltados++; continue; }
         const leg = match[1].replace(/^0+/,'') || '0';
         setMsg('Procesando legajo '+leg+'... ('+procesados+' subidos)');
+
+        const emp = Array.isArray(empList) && empList.find(e =>
+          e.legajo === leg ||
+          e.legajo === leg.padStart(8,'0') ||
+          e.legajo.replace(/^0+/,'') === leg
+        );
+        if(!emp){ noEncontrados.push(leg); saltados++; continue; }
+
         const pdfNuevo = await PDFDocument.create();
         const indices = [i, i+1].filter(x => x < totalPags);
         const pags = await pdfNuevo.copyPages(pdfDoc, indices);
         pags.forEach(p => pdfNuevo.addPage(p));
         const pdfEmpBytes = await pdfNuevo.save();
-        const blob = new Blob([pdfEmpBytes], {type:'application/pdf'});
-        const formData = new FormData();
-        formData.append('pdf', blob, leg+'.pdf');
-        formData.append('legajo', leg);
-        formData.append('periodo', periodo);
-        const r = await fetch(API+'/admin/subir-recibo-individual', {
-          method:'POST',
-          headers:{'Authorization':'Bearer '+token},
-          body: formData
+
+        const ruta = `recibos/${emp.id}/${periodo}.pdf`;
+        const uploadR = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPA_KEY}`,
+            'apikey': SUPA_KEY,
+            'Content-Type': 'application/pdf',
+            'x-upsert': 'true'
+          },
+          body: pdfEmpBytes
         });
-        const data = await r.json();
-        if(data.error){ noEncontrados.push(leg); saltados++; }
-        else procesados++;
+
+        if(!uploadR.ok){
+          const errTxt = await uploadR.text();
+          console.log('upload error', leg, errTxt);
+          noEncontrados.push(leg); saltados++; continue;
+        }
+
+        const regR = await fetch(API+'/admin/registrar-recibo', {
+          method:'POST',
+          headers:H(),
+          body: JSON.stringify({empleado_id: emp.id, periodo, url_archivo: ruta})
+        });
+        const regData = await regR.json();
+        if(regData.error){ saltados++; } else procesados++;
       }
       setMsg('Completado');
       setResultado({procesados, saltados, totalPaginas: totalPags, noEncontrados});
@@ -143,7 +170,7 @@ export default function Admin() {
     <div style={s.wrap}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
         <h1 style={{fontSize:20,fontWeight:600}}>Panel Admin</h1>
-        <button style={s.btn} onClick={()=>setLogueado(false)}>Salir</button>
+        <button style={s.btn} onClick={()=>{ setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
         {['recibos','empleados','solicitudes'].map(t=>(
