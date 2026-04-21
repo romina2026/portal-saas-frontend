@@ -4,7 +4,8 @@ import { PDFDocument } from 'pdf-lib';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Admin() {
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
+  const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
   const [legajo, setLegajo] = useState('001');
   const [password, setPassword] = useState('');
   const [logueado, setLogueado] = useState(false);
@@ -37,7 +38,7 @@ export default function Admin() {
       const r = await fetch(API+'/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({legajo, password})});
       const d = await r.json();
       const t = d.token || d.accessToken;
-      if(t) { setToken(t); setLogueado(true); }
+      if(t) { setToken(t); setLogueado(true); localStorage.setItem('admin_token', t); }
       else alert('Legajo o contrasena incorrectos');
     } catch(e) { alert('Error de conexion: '+e.message); }
   }
