@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient('https://huklwvkrykemdqpglwzr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg');
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
@@ -95,21 +97,14 @@ export default function Admin() {
         const pdfEmpBytes = await pdfNuevo.save();
 
         const ruta = `recibos/${emp.id}/${periodo}.pdf`;
-        const uploadR = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPA_KEY}`,
-            'apikey': SUPA_KEY,
-            'Content-Type': 'application/pdf',
-            'x-upsert': 'true'
-          },
-          body: pdfEmpBytes
-        });
+       const { error: uploadError } = await supabase.storage
+  .from('recibos')
+  .upload(ruta, pdfEmpBytes, { contentType: 'application/pdf', upsert: true });
 
-        if(!uploadR.ok){
-          const errTxt = await uploadR.text();
-          console.log('upload error', leg, errTxt);
-          noEncontrados.push(leg); saltados++; continue;
+if(uploadError){
+  console.log('upload error', leg, uploadError.message);
+  noEncontrados.push(leg); saltados++; continue;
+}
         }
 
         const regR = await fetch(API+'/admin/registrar-recibo', {
