@@ -105,7 +105,6 @@ if(uploadError){
   console.log('upload error', leg, uploadError.message);
   noEncontrados.push(leg); saltados++; continue;
 }
-        }
 
         const regR = await fetch(API+'/admin/registrar-recibo', {
           method:'POST',
@@ -115,9 +114,9 @@ if(uploadError){
         const regData = await regR.json();
         if(regData.error){ saltados++; } else procesados++;
       }
-      setMsg('Completado');
+     setMsg('Completado');
       setResultado({procesados, saltados, totalPaginas: totalPags, noEncontrados});
-     } catch(e){ setMsg('Error: '+e.message); }
+    } catch(e){ setMsg('Error: '+e.message); }
     setCargando(false);
   }
 
