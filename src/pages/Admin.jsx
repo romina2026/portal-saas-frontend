@@ -97,12 +97,19 @@ export default function Admin() {
         const pdfEmpBytes = await pdfNuevo.save();
 
         const ruta = `recibos/${emp.id}/${periodo}.pdf`;
-       const { error: uploadError } = await supabase.storage
-  .from('recibos')
-  .upload(ruta, pdfEmpBytes, { contentType: 'application/pdf', upsert: true });
-
-if(uploadError){
-  console.log('upload error', leg, uploadError.message);
+     const uploadR = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${SUPA_KEY}`,
+    'apikey': SUPA_KEY,
+    'Content-Type': 'application/pdf',
+    'x-upsert': 'true'
+  },
+  body: pdfEmpBytes
+});
+if(!uploadR.ok){
+  const errTxt = await uploadR.text();
+  console.log('upload error', leg, errTxt);
   noEncontrados.push(leg); saltados++; continue;
 }
 
