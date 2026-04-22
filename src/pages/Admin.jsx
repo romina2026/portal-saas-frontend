@@ -117,7 +117,7 @@ if(uploadError){
       }
       setMsg('Completado');
       setResultado({procesados, saltados, totalPaginas: totalPags, noEncontrados});
-    } catch(e){ setMsg('Error: '+e.message); }
+     } catch(e){ setMsg('Error: '+e.message); }
     setCargando(false);
   }
 
