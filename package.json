@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
     "axios": "^1.6.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.624",
