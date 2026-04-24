@@ -166,7 +166,55 @@ if(!uploadR.ok){
       <button onClick={login} style={{width:'100%',padding:'10px',background:'#1D9E75',color:'#fff',border:'none',borderRadius:8,cursor:'pointer',fontSize:14}}>Ingresar</button>
     </div>
   );
+function FichajesAdmin({token, API, s}) {
+  const [fichajes, setFichajes] = React.useState([]);
+  const [fecha, setFecha] = React.useState(new Date().toISOString().slice(0,10));
+  
+  React.useEffect(() => { cargar(); }, [fecha]);
+  
+  async function cargar() {
+    try {
+      const r = await fetch(`${API}/fichajes/admin?fecha=${fecha}`, {headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
+      const data = await r.json();
+      setFichajes(Array.isArray(data) ? data : []);
+    } catch(e) {}
+  }
+  function FichajesAdmin({token, API, s}) {
+  const [fichajes, setFichajes] = React.useState([]);
+  const [fecha, setFecha] = React.useState(new Date().toISOString().slice(0,10));
+  
+  React.useEffect(() => { cargar(); }, [fecha]);
+  
+  async function cargar() {
+    try {
+      const r = await fetch(`${API}/fichajes/admin?fecha=${fecha}`, {headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
+      const data = await r.json();
+      setFichajes(Array.isArray(data) ? data : []);
+    } catch(e) {}
+  }
+  
 
+}
+  return (
+    <div>
+      <div style={{marginBottom:'1rem'}}>
+        <label style={s.label}>Fecha</label>
+        <input type="date" style={{...s.input, maxWidth:200}} value={fecha} onChange={e=>setFecha(e.target.value)} />
+      </div>
+      <table style={{width:'100%',borderCollapse:'collapse'}}>
+        <thead><tr><th style={s.th}>Empleado</th><th style={s.th}>Tipo</th><th style={s.th}>Hora</th><th style={s.th}>Ubicación</th></tr></thead>
+        <tbody>{fichajes.map((f,i)=>(
+          <tr key={i}>
+            <td style={s.td}>{f.nombre_completo||f.empleado_id}</td>
+            <td style={s.td}><span style={{padding:'2px 8px',borderRadius:20,fontSize:11,background:f.tipo==='entrada'?'#E1F5EE':'#FCEBEB',color:f.tipo==='entrada'?'#0F6E56':'#A32D2D'}}>{f.tipo}</span></td>
+            <td style={s.td}>{new Date(f.created_at||f.timestamp).toLocaleTimeString('es-AR')}</td>
+            <td style={s.td}>{f.lat && f.lng ? `${Number(f.lat).toFixed(4)}, ${Number(f.lng).toFixed(4)}` : '—'}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  );
+}
   return (
     <div style={s.wrap}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
@@ -174,13 +222,18 @@ if(!uploadR.ok){
         <button style={s.btn} onClick={()=>{ setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos','empleados','solicitudes'].map(t=>(
+       {['recibos','empleados','solicitudes','fichajes'].map(t=>(
           <div key={t} style={s.tab(tab===t)} onClick={()=>setTab(t)}>
-            {t==='recibos'?'Subir Recibos':t==='empleados'?'Empleados':'Solicitudes'}
+           {t==='recibos'?'Subir Recibos':t==='empleados'?'Empleados':t==='solicitudes'?'Solicitudes':'Fichajes'}
           </div>
         ))}
       </div>
-
+{tab==='fichajes' && (
+  <div style={s.card}>
+    <h3 style={{fontSize:15,marginBottom:'1rem'}}>Control de fichajes</h3>
+    <FichajesAdmin token={token} API={API} s={s} />
+  </div>
+)}
       {tab==='recibos' && (
         <div style={s.card}>
           <h3 style={{fontSize:15,marginBottom:'1rem'}}>Subir PDF de recibos</h3>
