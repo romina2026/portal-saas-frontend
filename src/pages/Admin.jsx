@@ -25,14 +25,15 @@ function FichajesAdmin({ token, s }) {
         <input type="date" style={{ ...s.input, maxWidth: 200 }} value={fecha} onChange={e => setFecha(e.target.value)} />
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr><th style={s.th}>Empleado</th><th style={s.th}>Legajo</th><th style={s.th}>Entrada</th><th style={s.th}>Salida</th><th style={s.th}>Estado</th></tr></thead>
+        <thead><tr><<th style={s.th}>Entrada</th><th style={s.th}>Salida</th><th style={s.th}>Horas</th><th style={s.th}>Estado</th>
         <tbody>{fichajes.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: '#888' }}>Sin fichajes para esta fecha</td></tr> : fichajes.map((f, i) => (
           <tr key={i}>
             <td style={s.td}>{f.nombre_completo || '—'}</td>
             <td style={s.td}>{f.legajo || '—'}</td>
             <td style={s.td}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '—'}</td>
-            <td style={s.td}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
-            <td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
+<td style={s.td}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
+<td style={s.td}>{f.entrada && f.salida ? (() => { const mins = Math.round((new Date(f.salida) - new Date(f.entrada)) / 60000); return mins > 0 ? `${Math.floor(mins/60)}h ${mins%60}m` : '—'; })() : '—'}</td>
+<td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
           </tr>
         ))}</tbody>
       </table>
