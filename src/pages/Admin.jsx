@@ -252,9 +252,10 @@ if(!uploadR.ok){
                 <td style={s.td}>{s2.nombre_completo}</td>
                 <td style={s.td}>{s2.tipo}</td>
                 <td style={s.td}>{s2.fecha_inicio?.slice(0,10)||'-'}</td>
-                <td style={s.td}>{s2.motivo||'-'}</td>
+               <td style={s.td}>{s2.descripcion||s2.motivo||'-'}</td>
                 <td style={s.td}><span style={{padding:'2px 8px',borderRadius:20,fontSize:11,background:s2.estado==='aprobado'?'#E1F5EE':s2.estado==='rechazado'?'#FCEBEB':'#FAEEDA',color:s2.estado==='aprobado'?'#0F6E56':s2.estado==='rechazado'?'#A32D2D':'#854F0B'}}>{s2.estado}</span></td>
-                <td style={s.td}>
+               {s2.url_adjunto && <a href={s2.url_adjunto} target="_blank" rel="noreferrer" style={{fontSize:11,color:'#1D9E75',display:'block',marginBottom:4}}>Ver adjunto</a>}
+                  <td style={s.td}>
                   <button style={{...s.btn,marginRight:4,fontSize:11,padding:'3px 8px'}} onClick={()=>responder(s2.id,'aprobado')}>Aprobar</button>
                   <button style={{...s.btn,fontSize:11,padding:'3px 8px'}} onClick={()=>responder(s2.id,'rechazado')}>Rechazar</button>
                 </td>
