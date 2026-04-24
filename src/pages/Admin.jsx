@@ -156,7 +156,7 @@ async function procesarPDF() {
     tab: (a) => ({ padding: '10px 18px', cursor: 'pointer', borderBottom: a ? '2px solid #1D9E75' : '2px solid transparent', color: a ? '#1D9E75' : '#666', fontWeight: a ? 600 : 400, fontSize: 14 }),
     card: { background: '#fff', border: '1px solid #e5e5e5', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' },
     btn: { padding: '8px 16px', borderRadius: 8, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 13 },
-    btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#
+   btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13 },
  input: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8, boxSizing: 'border-box' },
     label: { fontSize: 12, color: '#555', display: 'block', marginBottom: 4 },
     th: { textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' },
