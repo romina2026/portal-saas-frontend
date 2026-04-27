@@ -7,38 +7,174 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 function FichajesAdmin({ token, s }) {
   const [fichajes, setFichajes] = useState([]);
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
-  useEffect(() => { cargar(); }, [fecha]);
+  const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10));
+  const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
+  useEffect(() => { cargar(); }, [desde, hasta]);
   async function cargar() {
     try {
-      const r = await fetch(`${API}/fichajes/admin?fecha=${fecha}`, {
+      const r = await fetch(`${API}/fichajes/admin?desde=${desde}&hasta=${hasta}`, {
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
       });
       const data = await r.json();
       setFichajes(Array.isArray(data) ? data : []);
     } catch (e) { setFichajes([]); }
   }
+  function calcDuracion(entrada, salida) {
+    if (!entrada || !salida) return '-';
+    const mins = Math.round((new Date(salida) - new Date(entrada)) / 60000);
+    if (mins <= 0) return '-';
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  }
+  async function exportarExcel() {
+    const XLSX = await import('xlsx');
+    const filas = fichajes.map(f => ({
+      Empleado: f.nombre_completo || '',
+      Legajo: f.legajo || '',
+      Fecha: f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '',
+      Entrada: f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '',
+      Salida: f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '',
+      Duracion: calcDuracion(f.entrada, f.salida),
+      Estado: f.estado || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(filas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Fichajes');
+    XLSX.writeFile(wb, `fichajes_${desde}_${hasta}.xlsx`);
+  }
   return (
     <div>
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={s.label}>Fecha</label>
-        <input type="date" style={{ ...s.input, maxWidth: 200 }} value={fecha} onChange={e => setFecha(e.target.value)} />
+      <div style={{ display: 'flex', gap: 16, marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div>
+          <label style={{ fontSize: 12, color: '#555', display: 'block', marginBottom: 4 }}>Desde</label>
+          <input type="date" style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8 }} value={desde} onChange={e => setDesde(e.target.value)} />
+        </div>
+        <div>
+          <label style={{ fontSize: 12, color: '#555', display: 'block', marginBottom: 4 }}>Hasta</label>
+          <input type="date" style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8 }} value={hasta} onChange={e => setHasta(e.target.value)} />
+        </div>
+        <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13, marginBottom: 8 }} onClick={exportarExcel} disabled={fichajes.length === 0}>Exportar Excel</button>
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr><th style={s.th}>Empleado</th><th style={s.th}>Legajo</th><th style={s.th}>Entrada</th><th style={s.th}>Salida</th><th style={s.th}>Estado</th></tr></thead>
-        <tbody>{fichajes.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: '#888' }}>Sin fichajes para esta fecha</td></tr> : fichajes.map((f, i) => (
-          <tr key={i}>
-            <td style={s.td}>{f.nombre_completo || '—'}</td>
-            <td style={s.td}>{f.legajo || '—'}</td>
-            <td style={s.td}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '—'}</td>
-            <td style={s.td}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
-            <td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Empleado</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Legajo</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Fecha</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Entrada</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Salida</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Duración</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Estado</th>
           </tr>
-        ))}</tbody>
+        </thead>
+        <tbody>
+          {fichajes.length === 0
+            ? <tr><td colSpan={7} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin fichajes para este periodo</td></tr>
+            : fichajes.map((f, i) => (
+              <tr key={i}>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.nombre_completo || '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.legajo || '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                  <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
       </table>
     </div>
   );
 }
+
+function AvisosAdmin({ token, s }) {
+  const [avisos, setAvisos] = useState([]);
+  const [titulo, setTitulo] = useState('');
+  const [contenido, setContenido] = useState('');
+  const [importante, setImportante] = useState(false);
+  const [adjunto, setAdjunto] = useState(null);
+  const [msg, setMsg] = useState('');
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => { cargarAvisos(); }, []);
+
+  async function cargarAvisos() {
+    try {
+      const r = await fetch(API + '/avisos', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await r.json();
+      setAvisos(Array.isArray(data) ? data : []);
+    } catch (e) { }
+  }
+
+  async function publicar() {
+    if (!titulo || !contenido) { setMsg('Completa titulo y contenido'); return; }
+    setCargando(true);
+    try {
+      let url_adjunto = null, tipo_adjunto = null;
+      if (adjunto) {
+        const ext = adjunto.name.split('.').pop();
+        const ruta = `avisos/${Date.now()}.${ext}`;
+        const up = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'apikey': SUPA_KEY, 'Content-Type': adjunto.type, 'x-upsert': 'true' },
+          body: adjunto
+        });
+        if (up.ok) { url_adjunto = ruta; tipo_adjunto = adjunto.type.startsWith('image') ? 'imagen' : 'pdf'; }
+      }
+      const r = await fetch(API + '/avisos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ titulo, contenido, importante, url_adjunto, tipo_adjunto })
+      });
+      const data = await r.json();
+      if (data.error) { setMsg('Error: ' + data.error); }
+      else { setMsg('Aviso publicado'); setTitulo(''); setContenido(''); setAdjunto(null); setImportante(false); cargarAvisos(); }
+    } catch (e) { setMsg('Error: ' + e.message); }
+    setCargando(false);
+  }
+
+  async function eliminar(id) {
+    if (!confirm('Desactivar este aviso?')) return;
+    await fetch(API + '/avisos/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    cargarAvisos();
+  }
+
+  return (
+    <div>
+      <div style={s.card}>
+        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Publicar nuevo aviso</h3>
+        <label style={s.label}>Titulo</label>
+        <input style={s.input} value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Titulo del aviso" />
+        <label style={s.label}>Contenido</label>
+        <textarea style={{ ...s.input, minHeight: 80, resize: 'vertical' }} value={contenido} onChange={e => setContenido(e.target.value)} placeholder="Escribi el aviso..." />
+        <label style={s.label}>Adjunto (PDF o imagen, opcional)</label>
+        <input type="file" accept=".pdf,image/*" onChange={e => setAdjunto(e.target.files[0])} style={{ marginBottom: 8 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <input type="checkbox" id="importante" checked={importante} onChange={e => setImportante(e.target.checked)} />
+          <label htmlFor="importante" style={{ fontSize: 13, cursor: 'pointer' }}>Marcar como importante</label>
+        </div>
+        <button style={s.btnP} onClick={publicar} disabled={cargando}>{cargando ? 'Publicando...' : 'Publicar aviso'}</button>
+        {msg && <div style={{ marginTop: 8, fontSize: 13, color: msg.startsWith('Error') ? '#A32D2D' : '#0F6E56' }}>{msg}</div>}
+      </div>
+      <div style={s.card}>
+        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Avisos activos</h3>
+        {avisos.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay avisos activos</p> : avisos.map(a => (
+          <div key={a.id} style={{ padding: '12px', borderRadius: 8, border: `1px solid ${a.importante ? '#F5A623' : '#e5e5e5'}`, background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && '⚠️ '}{a.titulo}</div>
+              <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div>
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>{new Date(a.created_at).toLocaleDateString('es-AR')}</div>
+            </div>
+            <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(a.id)}>Eliminar</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
   const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
@@ -85,7 +221,8 @@ export default function Admin() {
   async function cargarSolicitudes() {
     try { const r = await fetch(API + '/admin/solicitudes', { headers: H() }); setSolicitudes(await r.json()); } catch (e) { }
   }
-async function procesarPDF() {
+
+  async function procesarPDF() {
     if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
     if (!periodo) { setMsg('Escribi el periodo'); return; }
     setCargando(true); setMsg('Leyendo PDF...');
@@ -156,13 +293,14 @@ async function procesarPDF() {
     tab: (a) => ({ padding: '10px 18px', cursor: 'pointer', borderBottom: a ? '2px solid #1D9E75' : '2px solid transparent', color: a ? '#1D9E75' : '#666', fontWeight: a ? 600 : 400, fontSize: 14 }),
     card: { background: '#fff', border: '1px solid #e5e5e5', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' },
     btn: { padding: '8px 16px', borderRadius: 8, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 13 },
-    btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#
- input: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8, boxSizing: 'border-box' },
+    btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13 },
+    input: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8, boxSizing: 'border-box' },
     label: { fontSize: 12, color: '#555', display: 'block', marginBottom: 4 },
     th: { textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' },
     td: { padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 },
   };
-if (!logueado) return (
+
+  if (!logueado) return (
     <div style={{ maxWidth: 340, margin: '80px auto', padding: '2rem', border: '1px solid #e5e5e5', borderRadius: 12, fontFamily: 'system-ui' }}>
       <h2 style={{ fontSize: 18, marginBottom: '1.5rem' }}>Panel Admin</h2>
       <label style={s.label}>Legajo</label>
@@ -182,11 +320,12 @@ if (!logueado) return (
       <div style={s.tabs}>
         {['recibos', 'empleados', 'solicitudes', 'fichajes', 'avisos'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-           {t === 'recibos' ? 'Subir Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : 'Cartelera'}
+            {t === 'recibos' ? 'Subir Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : 'Cartelera'}
           </div>
         ))}
       </div>
-{tab === 'recibos' && (
+
+      {tab === 'recibos' && (
         <div style={s.card}>
           <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de recibos</h3>
           <label style={s.label}>Periodo (YYYY-MM)</label>
@@ -216,7 +355,8 @@ if (!logueado) return (
           )}
         </div>
       )}
-{tab === 'empleados' && (
+
+      {tab === 'empleados' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
             <button style={s.btnP} onClick={() => setModalEmp(true)}>+ Agregar empleado</button>
@@ -277,8 +417,9 @@ if (!logueado) return (
           <FichajesAdmin token={token} s={s} />
         </div>
       )}
-{tab === 'avisos' && (
-        <AvisosAdmin token={token} s={s} API={API} SUPA_URL={SUPA_URL} SUPA_KEY={SUPA_KEY} />
+
+      {tab === 'avisos' && (
+        <AvisosAdmin token={token} s={s} />
       )}
     </div>
   );
