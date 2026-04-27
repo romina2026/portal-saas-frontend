@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -62,7 +62,7 @@ function FichajesAdmin({ token, s }) {
             <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Fecha</th>
             <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Entrada</th>
             <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Salida</th>
-            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Duración</th>
+            <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>DuraciÃ³n</th>
             <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>Estado</th>
           </tr>
         </thead>
@@ -71,11 +71,11 @@ function FichajesAdmin({ token, s }) {
             ? <tr><td colSpan={7} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin fichajes para este periodo</td></tr>
             : fichajes.map((f, i) => (
               <tr key={i}>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.nombre_completo || '—'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.legajo || '—'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '—'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '—'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.nombre_completo || 'â€”'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.legajo || 'â€”'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : 'â€”'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : 'â€”'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : 'â€”'}</td>
                 <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
                 <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
                   <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
@@ -115,7 +115,7 @@ function AvisosAdmin({ token, s }) {
       let url_adjunto = null, tipo_adjunto = null;
       if (adjunto) {
         const ext = adjunto.name.split('.').pop();
-        const ruta = `avisos/${Date.now()}.${ext}`;
+        const ruta = `Avisones/${Date.now()}.${ext}`;
         const up = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'apikey': SUPA_KEY, 'Content-Type': adjunto.type, 'x-upsert': 'true' },
@@ -137,7 +137,7 @@ function AvisosAdmin({ token, s }) {
 
   async function eliminar(id) {
     if (!confirm('Desactivar este aviso?')) return;
-    await fetch(API + '/avisos/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    await fetch(API + '/Avisones/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
     cargarAvisos();
   }
 
@@ -163,7 +163,7 @@ function AvisosAdmin({ token, s }) {
         {avisos.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay avisos activos</p> : avisos.map(a => (
           <div key={a.id} style={{ padding: '12px', borderRadius: 8, border: `1px solid ${a.importante ? '#F5A623' : '#e5e5e5'}`, background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && '⚠️ '}{a.titulo}</div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && 'âš ï¸ '}{a.titulo}</div>
               <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div>
               <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>{new Date(a.created_at).toLocaleDateString('es-AR')}</div>
             </div>
