@@ -22,6 +22,26 @@ function FichajesAdmin({ token, s }) {
     } catch (e) { setFichajes([]); }
   }
 
+function exportarExcel() {
+    const headers = ['Empleado', 'Legajo', 'Fecha', 'Entrada', 'Salida', 'Duracion', 'Estado'];
+    const filas = fichajes.map(f => [
+      f.nombre_completo || '',
+      f.legajo || '',
+      f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '',
+      f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '',
+      f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '',
+      calcDuracion(f.entrada, f.salida),
+      f.estado || ''
+    ]);
+    const csv = [headers, ...filas].map(r => r.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fichajes_${desde}_${hasta}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   function calcDuracion(entrada, salida) {
     if (!entrada || !salida) return '—';
     const mins = Math.round((new Date(salida) - new Date(entrada)) / 60000);
@@ -41,7 +61,10 @@ function FichajesAdmin({ token, s }) {
           <input type="date" style={{ ...s.input, maxWidth: 180 }} value={hasta} onChange={e => setHasta(e.target.value)} />
         </div>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+ <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13 }} onClick={exportarExcel} disabled={fichajes.length === 0}>Exportar Excel</button>
+      </div>    
+ <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
             <th style={s.th}>Empleado</th>
