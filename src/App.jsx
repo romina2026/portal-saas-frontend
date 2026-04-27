@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+﻿import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store.js';
 import Login      from './pages/Login.jsx';
 import Home       from './pages/Home.jsx';
@@ -7,6 +7,7 @@ import CuentaCte  from './pages/CuentaCte.jsx';
 import RRHH       from './pages/RRHH.jsx';
 import Fichaje    from './pages/Fichaje.jsx';
 import CambiarPass from './pages/CambiarPass.jsx';
+import Beneficios from './pages/Beneficios.jsx';
 import Admin      from './pages/Admin.jsx';
 import BottomNav  from './components/BottomNav.jsx';
 
@@ -35,7 +36,8 @@ export default function App() {
       <Route path="/recibos" element={<PrivateRoute><Layout><Recibos /></Layout></PrivateRoute>} />
       <Route path="/cuenta" element={<PrivateRoute><Layout><CuentaCte /></Layout></PrivateRoute>} />
       <Route path="/rrhh" element={<PrivateRoute><Layout><RRHH /></Layout></PrivateRoute>} />
-      <Route path="/fichaje" element={<PrivateRoute><Layout><Fichaje /></Layout></PrivateRoute>} />
+      <Route path="/beneficios" element={<PrivateRoute><Layout><Beneficios /></Layout></PrivateRoute>} />
+        <Route path="/fichaje" element={<PrivateRoute><Layout><Fichaje /></Layout></PrivateRoute>} />
       <Route path="/admin" element={<Admin />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

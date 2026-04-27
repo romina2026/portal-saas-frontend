@@ -17,6 +17,7 @@ export default function Home() {
     { label: 'Cuenta cte.', sub: 'Ver movimientos', path: '/cuenta', color: '#DCFCE7', icon: '📊' },
     { label: 'RRHH', sub: 'Solicitudes', path: '/rrhh', color: '#FEF3C7', icon: '📋' },
     { label: 'Fichar', sub: 'Entrada / salida', path: '/fichaje', color: '#F3E8FF', icon: '🕐' },
+    { label: 'Beneficios', sub: 'Ver mis descuentos', path: '/beneficios', color: '#FEE2E2', icon: '🎁' },
   ];
   return (
     <div style={{ padding: '24px 16px' }}>
