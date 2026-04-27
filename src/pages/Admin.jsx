@@ -26,7 +26,7 @@ function FichajesAdmin({ token, s }) {
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr><<th style={s.th}>Entrada</th><th style={s.th}>Salida</th><th style={s.th}>Horas</th><th style={s.th}>Estado</th>
-        <tbody>{fichajes.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: '#888' }}>Sin fichajes para esta fecha</td></tr> : fichajes.map((f, i) => (
+        <tbody>{fichajes.length === 0 ? <tr><td colSpan={6} style={{ ...s.td, textAlign: 'center', color: '#888' }}>Sin fichajes para esta fecha</td></tr> : fichajes.map((f, i) => (
           <tr key={i}>
             <td style={s.td}>{f.nombre_completo || '—'}</td>
             <td style={s.td}>{f.legajo || '—'}</td>
