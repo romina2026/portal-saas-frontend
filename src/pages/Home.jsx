@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store.js';
 import { cuentaApi } from '../api/apis.js';
+import { api } from '../api/client.js';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export default function Home() {
   const empleado = useAuthStore((s) => s.empleado);
@@ -11,9 +12,9 @@ export default function Home() {
   const navigate = useNavigate();
   useEffect(() => { cuentaApi.getSaldo().then(r => setSaldo(r.data)).catch(() => {}); }, []);
   useEffect(() => {
-    if (!accessToken) return;
-    fetch(API + '/avisos', { headers: { 'Authorization': 'Bearer ' + accessToken } })
-      .then(r => r.json()).then(data => setAvisos(Array.isArray(data) ? data : [])).catch(() => {});
+    
+    api.get('/avisos').then(r => setAvisos(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+  }, []);
   }, [accessToken]);
   const accesos = [
     { label: 'Recibos', sub: 'Descarga tus recibos', path: '/recibos', color: '#EEF2FF', icon: '📄' },
@@ -59,3 +60,4 @@ export default function Home() {
     </div>
   );
 }
+
