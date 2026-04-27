@@ -180,9 +180,9 @@ if (!logueado) return (
         <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos', 'empleados', 'solicitudes', 'fichajes'].map(t => (
+        {['recibos', 'empleados', 'solicitudes', 'fichajes', 'avisos'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'recibos' ? 'Subir Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : 'Fichajes'}
+           {t === 'recibos' ? 'Subir Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : 'Cartelera'}
           </div>
         ))}
       </div>
@@ -276,6 +276,9 @@ if (!logueado) return (
           <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Control de fichajes</h3>
           <FichajesAdmin token={token} s={s} />
         </div>
+      )}
+{tab === 'avisos' && (
+        <AvisosAdmin token={token} s={s} API={API} SUPA_URL={SUPA_URL} SUPA_KEY={SUPA_KEY} />
       )}
     </div>
   );
