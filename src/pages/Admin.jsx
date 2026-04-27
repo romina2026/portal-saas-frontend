@@ -7,100 +7,38 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 function FichajesAdmin({ token, s }) {
   const [fichajes, setFichajes] = useState([]);
-  const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10));
-  const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
-
-  useEffect(() => { cargar(); }, [desde, hasta]);
-
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  useEffect(() => { cargar(); }, [fecha]);
   async function cargar() {
     try {
-      const r = await fetch(`${API}/fichajes/admin?desde=${desde}&hasta=${hasta}`, {
+      const r = await fetch(`${API}/fichajes/admin?fecha=${fecha}`, {
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
       });
       const data = await r.json();
       setFichajes(Array.isArray(data) ? data : []);
     } catch (e) { setFichajes([]); }
   }
-
-function exportarExcel() {
-    const headers = ['Empleado', 'Legajo', 'Fecha', 'Entrada', 'Salida', 'Duracion', 'Estado'];
-    const filas = fichajes.map(f => [
-      f.nombre_completo || '',
-      f.legajo || '',
-      f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '',
-      f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '',
-      f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '',
-      calcDuracion(f.entrada, f.salida),
-      f.estado || ''
-    ]);
-    const csv = [headers, ...filas].map(r => r.join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fichajes_${desde}_${hasta}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-  function calcDuracion(entrada, salida) {
-    if (!entrada || !salida) return '—';
-    const mins = Math.round((new Date(salida) - new Date(entrada)) / 60000);
-    if (mins <= 0) return '—';
-    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-  }
-
   return (
     <div>
-      <div style={{ display: 'flex', gap: 16, marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <div>
-          <label style={s.label}>Desde</label>
-          <input type="date" style={{ ...s.input, maxWidth: 180 }} value={desde} onChange={e => setDesde(e.target.value)} />
-        </div>
-        <div>
-          <label style={s.label}>Hasta</label>
-          <input type="date" style={{ ...s.input, maxWidth: 180 }} value={hasta} onChange={e => setHasta(e.target.value)} />
-        </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={s.label}>Fecha</label>
+        <input type="date" style={{ ...s.input, maxWidth: 200 }} value={fecha} onChange={e => setFecha(e.target.value)} />
       </div>
- <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13 }} onClick={exportarExcel} disabled={fichajes.length === 0}>Exportar Excel</button>
-      </div>    
- <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={s.th}>Empleado</th>
-            <th style={s.th}>Legajo</th>
-            <th style={s.th}>Fecha</th>
-            <th style={s.th}>Entrada</th>
-            <th style={s.th}>Salida</th>
-            <th style={s.th}>Duración</th>
-            <th style={s.th}>Estado</th>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr><th style={s.th}>Empleado</th><th style={s.th}>Legajo</th><th style={s.th}>Entrada</th><th style={s.th}>Salida</th><th style={s.th}>Estado</th></tr></thead>
+        <tbody>{fichajes.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: '#888' }}>Sin fichajes para esta fecha</td></tr> : fichajes.map((f, i) => (
+          <tr key={i}>
+            <td style={s.td}>{f.nombre_completo || '—'}</td>
+            <td style={s.td}>{f.legajo || '—'}</td>
+            <td style={s.td}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '—'}</td>
+            <td style={s.td}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
+            <td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
           </tr>
-        </thead>
-        <tbody>
-          {fichajes.length === 0
-            ? <tr><td colSpan={7} style={{ ...s.td, textAlign: 'center', color: '#888' }}>Sin fichajes para este periodo</td></tr>
-            : fichajes.map((f, i) => (
-              <tr key={i}>
-                <td style={s.td}>{f.nombre_completo || '—'}</td>
-                <td style={s.td}>{f.legajo || '—'}</td>
-                <td style={s.td}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '—'}</td>
-                <td style={s.td}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '—'}</td>
-                <td style={s.td}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '—'}</td>
-                <td style={s.td}>{calcDuracion(f.entrada, f.salida)}</td>
-                <td style={s.td}>
-                  <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>
-                    {f.estado}
-                  </span>
-                </td>
-              </tr>
-            ))
-          }
-        </tbody>
+        ))}</tbody>
       </table>
     </div>
   );
 }
-
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
   const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
@@ -147,8 +85,7 @@ export default function Admin() {
   async function cargarSolicitudes() {
     try { const r = await fetch(API + '/admin/solicitudes', { headers: H() }); setSolicitudes(await r.json()); } catch (e) { }
   }
-
-  async function procesarPDF() {
+async function procesarPDF() {
     if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
     if (!periodo) { setMsg('Escribi el periodo'); return; }
     setCargando(true); setMsg('Leyendo PDF...');
@@ -219,14 +156,13 @@ export default function Admin() {
     tab: (a) => ({ padding: '10px 18px', cursor: 'pointer', borderBottom: a ? '2px solid #1D9E75' : '2px solid transparent', color: a ? '#1D9E75' : '#666', fontWeight: a ? 600 : 400, fontSize: 14 }),
     card: { background: '#fff', border: '1px solid #e5e5e5', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' },
     btn: { padding: '8px 16px', borderRadius: 8, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 13 },
-    btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13 },
-    input: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8, boxSizing: 'border-box' },
+    btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#
+ input: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8, boxSizing: 'border-box' },
     label: { fontSize: 12, color: '#555', display: 'block', marginBottom: 4 },
     th: { textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' },
     td: { padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 },
   };
-
-  if (!logueado) return (
+if (!logueado) return (
     <div style={{ maxWidth: 340, margin: '80px auto', padding: '2rem', border: '1px solid #e5e5e5', borderRadius: 12, fontFamily: 'system-ui' }}>
       <h2 style={{ fontSize: 18, marginBottom: '1.5rem' }}>Panel Admin</h2>
       <label style={s.label}>Legajo</label>
@@ -250,8 +186,7 @@ export default function Admin() {
           </div>
         ))}
       </div>
-
-      {tab === 'recibos' && (
+{tab === 'recibos' && (
         <div style={s.card}>
           <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de recibos</h3>
           <label style={s.label}>Periodo (YYYY-MM)</label>
@@ -281,8 +216,7 @@ export default function Admin() {
           )}
         </div>
       )}
-
-      {tab === 'empleados' && (
+{tab === 'empleados' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
             <button style={s.btnP} onClick={() => setModalEmp(true)}>+ Agregar empleado</button>
