@@ -3,19 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store.js';
 import { cuentaApi } from '../api/apis.js';
 import { api } from '../api/client.js';
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export default function Home() {
   const empleado = useAuthStore((s) => s.empleado);
-  const accessToken = useAuthStore((s) => s.accessToken);
   const [saldo, setSaldo] = useState(null);
   const [avisos, setAvisos] = useState([]);
   const navigate = useNavigate();
   useEffect(() => { cuentaApi.getSaldo().then(r => setSaldo(r.data)).catch(() => {}); }, []);
   useEffect(() => {
-    
     api.get('/avisos').then(r => setAvisos(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
-  }, [accessToken]);
   const accesos = [
     { label: 'Recibos', sub: 'Descarga tus recibos', path: '/recibos', color: '#EEF2FF', icon: '📄' },
     { label: 'Cuenta cte.', sub: 'Ver movimientos', path: '/cuenta', color: '#DCFCE7', icon: '📊' },
@@ -42,6 +38,9 @@ export default function Home() {
             <div key={a.id} style={{ padding: '14px 16px', borderRadius: 10, border: '1px solid #e5e5e5', background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 10 }}>
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{a.importante ? '⚠️ ' : ''}{a.titulo}</div>
               <div style={{ fontSize: 13, color: '#555', marginBottom: 6 }}>{a.contenido}</div>
+              {a.url_adjunto && a.tipo_adjunto === 'pdf' && (
+                <a href={'https://huklwvkrykemdqpglwzr.supabase.co/storage/v1/object/public/' + a.url_adjunto} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#1D9E75', display: 'inline-block', marginTop: 4 }}>📎 Ver adjunto</a>
+              )}
               <div style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>{new Date(a.created_at).toLocaleDateString('es-AR')}</div>
             </div>
           ))}
@@ -60,4 +59,3 @@ export default function Home() {
     </div>
   );
 }
-

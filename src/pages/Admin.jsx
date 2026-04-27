@@ -115,7 +115,7 @@ function AvisosAdmin({ token, s }) {
       let url_adjunto = null, tipo_adjunto = null;
       if (adjunto) {
         const ext = adjunto.name.split('.').pop();
-        const ruta = `Avisones/${Date.now()}.${ext}`;
+        const ruta = `avisos/${Date.now()}.${ext}`;
         const up = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'apikey': SUPA_KEY, 'Content-Type': adjunto.type, 'x-upsert': 'true' },
@@ -137,7 +137,7 @@ function AvisosAdmin({ token, s }) {
 
   async function eliminar(id) {
     if (!confirm('Desactivar este aviso?')) return;
-    await fetch(API + '/Avisones/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    await fetch(API + '/avisos/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
     cargarAvisos();
   }
 
