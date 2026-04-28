@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
@@ -91,6 +91,25 @@ function CtaCteAdmin({ token, s }) {
       const pdfBytes = new Uint8Array(arrayBuffer);
       const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
       const saldos = [];
+      const isSaldo = s => /^-?\d{1,3}(\.\d{3})*,\d{2}$/.test(s);
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const items = content.items.map(x => x.str.trim()).filter(x => x.trim() !== "");
+        for (let j = 0; j < items.length; j++) {
+          if (/^\d+$/.test(items[j]) && Number(items[j]) > 0 && items[j].length <= 8) {
+            const codigo = items[j];
+            let saldoStr = null;
+            for (let k = j + 1; k < Math.min(j + 25, items.length); k++) {
+              if (isSaldo(items[k])) { saldoStr = items[k]; }
+            }
+            if (saldoStr) {
+              const saldo = parseFloat(saldoStr.replace(/\./g, "").replace(",", "."));
+              if (!isNaN(saldo)) saldos.push({ codigo, saldo });
+            }
+          }
+        }
+      }
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
@@ -287,7 +306,7 @@ function FichajesAdmin({ token, s }) {
                 <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
                   <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
                 </td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || 'â€”'}</td>
               </tr>
             ))}
         </tbody>
@@ -344,7 +363,7 @@ function AvisosAdmin({ token, s }) {
         <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Avisos activos</h3>
         {avisos.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay avisos</p> : avisos.map(a => (
           <div key={a.id} style={{ padding: '12px', borderRadius: 8, border: `1px solid ${a.importante ? '#F5A623' : '#e5e5e5'}`, background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && '⚠️ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
+            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && 'âš ï¸ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
             <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(a.id)}>Eliminar</button>
           </div>
         ))}
@@ -535,3 +554,4 @@ export default function Admin() {
     </div>
   );
 }
+
