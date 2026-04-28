@@ -3,6 +3,72 @@ import { PDFDocument } from 'pdf-lib';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg';
+
+function UbicacionesAdmin({ token, s }) {
+  const [ubicaciones, setUbicaciones] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [form, setForm] = useState({ nombre: '', direccion: '', lat: '', lng: '', radio_metros: 100 });
+  const [msg, setMsg] = useState('');
+  useEffect(() => { cargar(); }, []);
+  async function cargar() {
+    try { const r = await fetch(API + '/ubicaciones', { headers: { 'Authorization': 'Bearer ' + token } }); setUbicaciones(await r.json()); } catch (e) { }
+  }
+  function abrirNuevo() { setEditando(null); setForm({ nombre: '', direccion: '', lat: '', lng: '', radio_metros: 100 }); setModal(true); }
+  function abrirEditar(u) { setEditando(u.id); setForm({ nombre: u.nombre, direccion: u.direccion, lat: u.lat, lng: u.lng, radio_metros: u.radio_metros || 100 }); setModal(true); }
+  async function guardar() {
+    if (!form.nombre || !form.lat || !form.lng) { setMsg('Completa nombre, lat y lng'); return; }
+    try {
+      if (editando) { await fetch(API + '/ubicaciones/' + editando, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ ...form, activo: true }) }); }
+      else { await fetch(API + '/ubicaciones', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(form) }); }
+      setModal(false); setMsg(''); cargar();
+    } catch (e) { setMsg('Error: ' + e.message); }
+  }
+  async function eliminar(id) {
+    if (!confirm('Desactivar esta ubicacion?')) return;
+    await fetch(API + '/ubicaciones/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); cargar();
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button style={s.btnP} onClick={abrirNuevo}>+ Agregar ubicacion</button>
+      </div>
+      <div style={s.card}>
+        {ubicaciones.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay ubicaciones</p> : ubicaciones.map(u => (
+          <div key={u.id} style={{ padding: '12px', borderRadius: 8, border: '1px solid #e5e5e5', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{u.nombre}</div>
+              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{u.direccion}</div>
+              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Lat: {u.lat} | Lng: {u.lng} | Radio: {u.radio_metros}m</div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => abrirEditar(u)}>Editar</button>
+              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(u.id)}>Eliminar</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {modal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
+            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar ubicacion' : 'Nueva ubicacion'}</h3>
+            <label style={s.label}>Nombre</label><input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Casa Central" />
+            <label style={s.label}>Direccion</label><input style={s.input} value={form.direccion} onChange={e => setForm({ ...form, direccion: e.target.value })} placeholder="Ej: 12 de Octubre 626" />
+            <label style={s.label}>Latitud</label><input style={s.input} value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} placeholder="Ej: -33.752903" />
+            <label style={s.label}>Longitud</label><input style={s.input} value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} placeholder="Ej: -61.976127" />
+            <label style={s.label}>Radio (metros)</label><input type="number" style={{ ...s.input, maxWidth: 120 }} value={form.radio_metros} onChange={e => setForm({ ...form, radio_metros: Number(e.target.value) })} />
+            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button style={s.btn} onClick={() => { setModal(false); setMsg(''); }}>Cancelar</button>
+              <button style={s.btnP} onClick={guardar}>{editando ? 'Guardar cambios' : 'Agregar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BeneficiosAdmin({ token, s }) {
   const [beneficios, setBeneficios] = useState([]);
   const [modal, setModal] = useState(false);
@@ -53,16 +119,11 @@ function BeneficiosAdmin({ token, s }) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
             <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar beneficio' : 'Nuevo beneficio'}</h3>
-            <label style={s.label}>Nombre</label>
-            <input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
-            <label style={s.label}>Comercio</label>
-            <input style={s.input} value={form.comercio} onChange={e => setForm({ ...form, comercio: e.target.value })} />
-            <label style={s.label}>Descuento</label>
-            <input style={s.input} value={form.descuento} onChange={e => setForm({ ...form, descuento: e.target.value })} />
-            <label style={s.label}>Descripcion</label>
-            <textarea style={{ ...s.input, minHeight: 60, resize: 'vertical' }} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
-            <label style={s.label}>Vencimiento</label>
-            <input type="date" style={{ ...s.input, maxWidth: 200 }} value={form.vencimiento} onChange={e => setForm({ ...form, vencimiento: e.target.value })} />
+            <label style={s.label}>Nombre</label><input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
+            <label style={s.label}>Comercio</label><input style={s.input} value={form.comercio} onChange={e => setForm({ ...form, comercio: e.target.value })} />
+            <label style={s.label}>Descuento</label><input style={s.input} value={form.descuento} onChange={e => setForm({ ...form, descuento: e.target.value })} />
+            <label style={s.label}>Descripcion</label><textarea style={{ ...s.input, minHeight: 60, resize: 'vertical' }} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+            <label style={s.label}>Vencimiento</label><input type="date" style={{ ...s.input, maxWidth: 200 }} value={form.vencimiento} onChange={e => setForm({ ...form, vencimiento: e.target.value })} />
             {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button style={s.btn} onClick={() => { setModal(false); setMsg(''); }}>Cancelar</button>
@@ -74,6 +135,7 @@ function BeneficiosAdmin({ token, s }) {
     </div>
   );
 }
+
 function FichajesAdmin({ token, s }) {
   const [fichajes, setFichajes] = useState([]);
   const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10));
@@ -94,7 +156,7 @@ function FichajesAdmin({ token, s }) {
   }
   async function exportarExcel() {
     const XLSX = await import('xlsx');
-    const filas = fichajes.map(f => ({ Empleado: f.nombre_completo || '', Legajo: f.legajo || '', Fecha: f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '', Entrada: f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '', Salida: f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '', Duracion: calcDuracion(f.entrada, f.salida), Estado: f.estado || '', Lat_entrada: f.lat_entrada || '', Lng_entrada: f.lng_entrada || '' }));
+    const filas = fichajes.map(f => ({ Empleado: f.nombre_completo || '', Legajo: f.legajo || '', Fecha: f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '', Entrada: f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '', Salida: f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '', Duracion: calcDuracion(f.entrada, f.salida), Estado: f.estado || '', Sucursal: f.sucursal || '' }));
     const ws = XLSX.utils.json_to_sheet(filas);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Fichajes');
@@ -109,30 +171,33 @@ function FichajesAdmin({ token, s }) {
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr>
-        {['Empleado','Legajo','Fecha','Entrada','Salida','Duracion','Estado','Ubicacion'].map(h =>   <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>)}
+          {['Empleado','Legajo','Fecha','Entrada','Salida','Duracion','Estado','Sucursal'].map(h => (
+            <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>
+          ))}
         </tr></thead>
         <tbody>
-          {fichajes.length === 0 ? <tr><td colSpan={7} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin fichajes</td></tr>
-          : fichajes.map((f, i) => (
-            <tr key={i}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.nombre_completo || '-'}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.legajo || '-'}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '-'}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '-'}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '-'}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
-           <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888' }}>
-  {f.sucursal || '—'}
-    ? <a href={`https://www.google.com/maps?q=${f.lat_entrada},${f.sucursal || '—'}
-</td>
- </tr>
-          ))}
+          {fichajes.length === 0
+            ? <tr><td colSpan={8} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin fichajes</td></tr>
+            : fichajes.map((f, i) => (
+              <tr key={i}>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.nombre_completo || '-'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.legajo || '-'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '-'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '-'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '-'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                  <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
+                </td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || '—'}</td>
+              </tr>
+            ))}
         </tbody>
       </table>
     </div>
   );
 }
+
 function AvisosAdmin({ token, s }) {
   const [avisos, setAvisos] = useState([]);
   const [titulo, setTitulo] = useState('');
@@ -189,6 +254,7 @@ function AvisosAdmin({ token, s }) {
     </div>
   );
 }
+
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
   const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
@@ -299,9 +365,9 @@ export default function Admin() {
         <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos','empleados','solicitudes','fichajes','avisos','beneficios'].map(t => (
+        {['recibos','empleados','solicitudes','fichajes','avisos','beneficios','ubicaciones'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'recibos' ? 'Subir Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : 'Beneficios'}
+            {t === 'recibos' ? 'Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : 'Ubicaciones'}
           </div>
         ))}
       </div>
@@ -366,6 +432,7 @@ export default function Admin() {
       {tab === 'fichajes' && <div style={s.card}><h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Control de fichajes</h3><FichajesAdmin token={token} s={s} /></div>}
       {tab === 'avisos' && <AvisosAdmin token={token} s={s} />}
       {tab === 'beneficios' && <BeneficiosAdmin token={token} s={s} />}
+      {tab === 'ubicaciones' && <UbicacionesAdmin token={token} s={s} />}
     </div>
   );
 }
