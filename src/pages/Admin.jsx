@@ -318,7 +318,7 @@ export default function Admin() {
         <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos', 'empleados', 'solicitudes', 'fichajes', 'avisos'].map(t => (
+        {['recibos', 'empleados', 'solicitudes', 'fichajes', 'avisos', 'beneficios'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
             {t === 'recibos' ? 'Subir Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : 'Cartelera'}
           </div>
@@ -418,8 +418,85 @@ export default function Admin() {
         </div>
       )}
 
+      {tab === 'beneficios' && <BeneficiosAdmin token={token} s={s} />}
       {tab === 'avisos' && (
         <AvisosAdmin token={token} s={s} />
+      )}
+    </div>
+  );
+}
+import React, { useState, useEffect } from 'react';
+import { PDFDocument } from 'pdf-lib';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg';
+function BeneficiosAdmin({ token, s }) {
+  const [beneficios, setBeneficios] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [form, setForm] = useState({ nombre: '', comercio: '', descuento: '', descripcion: '', vencimiento: '' });
+  const [msg, setMsg] = useState('');
+  useEffect(() => { cargar(); }, []);
+  async function cargar() {
+    try { const r = await fetch(API + '/beneficios', { headers: { 'Authorization': 'Bearer ' + token } }); setBeneficios(await r.json()); } catch (e) { }
+  }
+  function abrirNuevo() { setEditando(null); setForm({ nombre: '', comercio: '', descuento: '', descripcion: '', vencimiento: '' }); setModal(true); }
+  function abrirEditar(b) { setEditando(b.id); setForm({ nombre: b.nombre, comercio: b.comercio, descuento: b.descuento, descripcion: b.descripcion || '', vencimiento: b.vencimiento?.slice(0, 10) || '' }); setModal(true); }
+  async function guardar() {
+    if (!form.nombre || !form.comercio || !form.descuento || !form.vencimiento) { setMsg('Completa todos los campos'); return; }
+    try {
+      if (editando) { await fetch(API + '/beneficios/' + editando, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ ...form, activo: true }) }); }
+      else { await fetch(API + '/beneficios', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(form) }); }
+      setModal(false); setMsg(''); cargar();
+    } catch (e) { setMsg('Error: ' + e.message); }
+  }
+  async function eliminar(id) {
+    if (!confirm('Desactivar este beneficio?')) return;
+    await fetch(API + '/beneficios/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); cargar();
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button style={s.btnP} onClick={abrirNuevo}>+ Agregar beneficio</button>
+      </div>
+      <div style={s.card}>
+        {beneficios.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay beneficios</p> : beneficios.map(b => (
+          <div key={b.id} style={{ padding: '12px', borderRadius: 8, border: '1px solid #e5e5e5', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{b.nombre}</div>
+              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{b.comercio}</div>
+              <div style={{ fontSize: 13, color: '#1D9E75', fontWeight: 600, marginTop: 4 }}>{b.descuento}</div>
+              {b.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{b.descripcion}</div>}
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Vence: {new Date(b.vencimiento).toLocaleDateString('es-AR')}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => abrirEditar(b)}>Editar</button>
+              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(b.id)}>Eliminar</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {modal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
+            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar beneficio' : 'Nuevo beneficio'}</h3>
+            <label style={s.label}>Nombre</label>
+            <input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
+            <label style={s.label}>Comercio</label>
+            <input style={s.input} value={form.comercio} onChange={e => setForm({ ...form, comercio: e.target.value })} />
+            <label style={s.label}>Descuento</label>
+            <input style={s.input} value={form.descuento} onChange={e => setForm({ ...form, descuento: e.target.value })} />
+            <label style={s.label}>Descripcion</label>
+            <textarea style={{ ...s.input, minHeight: 60, resize: 'vertical' }} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+            <label style={s.label}>Vencimiento</label>
+            <input type="date" style={{ ...s.input, maxWidth: 200 }} value={form.vencimiento} onChange={e => setForm({ ...form, vencimiento: e.target.value })} />
+            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button style={s.btn} onClick={() => { setModal(false); setMsg(''); }}>Cancelar</button>
+              <button style={s.btnP} onClick={guardar}>{editando ? 'Guardar cambios' : 'Agregar'}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
