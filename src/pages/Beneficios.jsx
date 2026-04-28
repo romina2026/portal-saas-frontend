@@ -43,7 +43,7 @@ export default function Beneficios() {
     ctx.drawImage(video, 0, 0, 300, 300);
     canvas.toBlob(async (blob) => {
       setSubiendo(true); cerrarCamara();
-      const ruta = 'fotos/' + empleado.id + '.jpg';
+    const ruta = 'adjuntos/' + empleado.id + '.jpg';
       await fetch(SUPA_URL + '/storage/v1/object/' + ruta, {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + SUPA_KEY, 'apikey': SUPA_KEY, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
