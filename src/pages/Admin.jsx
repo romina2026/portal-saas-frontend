@@ -69,6 +69,48 @@ function UbicacionesAdmin({ token, s }) {
   );
 }
 
+function CtaCteAdmin({ token, s }) {
+  const [pdfFile, setPdfFile] = React.useState(null);
+  const [periodo, setPeriodo] = React.useState('');
+  const [msg, setMsg] = React.useState('');
+  const [resultado, setResultado] = React.useState(null);
+  const [cargando, setCargando] = React.useState(false);
+  React.useEffect(() => { const d = new Date(); setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }, []);
+  async function procesar() {
+    if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
+    if (!periodo) { setMsg('Escribi el periodo'); return; }
+    setCargando(true); setMsg('Procesando...'); setResultado(null);
+    try {
+      const formData = new FormData();
+      formData.append('pdf', pdfFile);
+      formData.append('periodo', periodo);
+      const r = await fetch(API + '/admin/subir-cta-cte', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+      const data = await r.json();
+      if (data.error) { setMsg('Error: ' + data.error); } else { setMsg('Completado'); setResultado(data); }
+    } catch (e) { setMsg('Error: ' + e.message); }
+    setCargando(false);
+  }
+  return (
+    <div style={s.card}>
+      <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de Cuenta Corriente</h3>
+      <label style={s.label}>Periodo (YYYY-MM)</label>
+      <input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-04" />
+      <label style={s.label}>Archivo PDF</label>
+      <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])} style={{ marginBottom: 12 }} />
+      {pdfFile && <div style={{ fontSize: 12, color: '#1D9E75', marginBottom: 8 }}>{pdfFile.name}</div>}
+      <br />
+      <button style={s.btnP} onClick={procesar} disabled={cargando}>{cargando ? 'Procesando...' : 'Procesar y subir saldos'}</button>
+      {msg && <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, fontSize: 13, background: msg.startsWith('Error') || msg.startsWith('Selec') ? '#FCEBEB' : '#E1F5EE', color: msg.startsWith('Error') || msg.startsWith('Selec') ? '#A32D2D' : '#0F6E56' }}>{msg}</div>}
+      {resultado && (
+        <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+          <div style={{ background: '#E1F5EE', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#0F6E56' }}>{resultado.procesados}</div><div style={{ fontSize: 12 }}>Saldos actualizados</div></div>
+          <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700 }}>{resultado.saltados}</div><div style={{ fontSize: 12 }}>Saltados</div></div>
+          {resultado.noEncontrados?.length > 0 && <div style={{ gridColumn: '1/-1', background: '#FAEEDA', borderRadius: 8, padding: '10px', fontSize: 12, color: '#854F0B' }}>No encontrados: {resultado.noEncontrados.join(', ')}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
 function BeneficiosAdmin({ token, s }) {
   const [beneficios, setBeneficios] = useState([]);
   const [modal, setModal] = useState(false);
@@ -365,9 +407,9 @@ export default function Admin() {
         <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos','empleados','solicitudes','fichajes','avisos','beneficios','ubicaciones'].map(t => (
+        {['recibos','cta-cte','empleados','solicitudes','fichajes','avisos','beneficios','ubicaciones'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'recibos' ? 'Recibos' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : 'Ubicaciones'}
+            {t === 'recibos' ? 'Recibos' : t === 'cta-cte' ? 'Cta. Cte.' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : 'Ubicaciones'}
           </div>
         ))}
       </div>
@@ -430,6 +472,7 @@ export default function Admin() {
         </div>
       )}
       {tab === 'fichajes' && <div style={s.card}><h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Control de fichajes</h3><FichajesAdmin token={token} s={s} /></div>}
+      {tab === 'cta-cte' && <CtaCteAdmin token={token} s={s} />}
       {tab === 'avisos' && <AvisosAdmin token={token} s={s} />}
       {tab === 'beneficios' && <BeneficiosAdmin token={token} s={s} />}
       {tab === 'ubicaciones' && <UbicacionesAdmin token={token} s={s} />}
