@@ -1,9 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg';
 
 function FichajesAdmin({ token, s }) {
   const [fichajes, setFichajes] = useState([]);
@@ -427,9 +424,6 @@ export default function Admin() {
 }
 import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg';
 function BeneficiosAdmin({ token, s }) {
   const [beneficios, setBeneficios] = useState([]);
   const [modal, setModal] = useState(false);
@@ -501,3 +495,4 @@ function BeneficiosAdmin({ token, s }) {
     </div>
   );
 }
+
