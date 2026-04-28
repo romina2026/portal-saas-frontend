@@ -79,12 +79,34 @@ function CtaCteAdmin({ token, s }) {
   async function procesar() {
     if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
     if (!periodo) { setMsg('Escribi el periodo'); return; }
-    setCargando(true); setMsg('Procesando...'); setResultado(null);
+    setCargando(true); setMsg('Leyendo PDF...'); setResultado(null);
     try {
-      const formData = new FormData();
-      formData.append('pdf', pdfFile);
-      formData.append('periodo', periodo);
-      const r = await fetch(API + '/admin/subir-cta-cte', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+      let textoCompleto = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        textoCompleto += content.items.map(x => x.str).join(' ') + '\n';
+      }
+      const lineas = textoCompleto.split('\n');
+      const saldos = [];
+      for (const linea of lineas) {
+        const match = linea.match(/^\s*(\d+)\s+.+?([\d]{1,3}(?:\.\d{3})*,\d{2})\s+([\d]{1,3}(?:\.\d{3})*,\d{2})\s*$/);
+        if (!match) continue;
+        const codigo = match[1].trim();
+        const saldoStr = match[3].replace(/\./g, '').replace(',', '.');
+        const saldo = parseFloat(saldoStr);
+        if (!isNaN(saldo) && saldo !== 0) saldos.push({ codigo, saldo });
+      }
+      setMsg('Enviando ' + saldos.length + ' saldos...');
+      const r = await fetch(API + '/admin/subir-cta-cte', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ periodo, saldos })
+      });
       const data = await r.json();
       if (data.error) { setMsg('Error: ' + data.error); } else { setMsg('Completado'); setResultado(data); }
     } catch (e) { setMsg('Error: ' + e.message); }
@@ -479,3 +501,4 @@ export default function Admin() {
     </div>
   );
 }
+
