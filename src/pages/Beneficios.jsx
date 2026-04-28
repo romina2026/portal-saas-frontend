@@ -19,7 +19,7 @@ export default function Beneficios() {
   }, []);
   async function cargarFoto() {
     if (!empleado?.id) return;
-    const url = SUPA_URL + '/storage/v1/object/public/adjuntos/fotos/' + empleado.id + '.jpg';
+    const url = SUPA_URL + '/storage/v1/object/public/adjuntos/' + empleado.id + '.jpg';
     const r = await fetch(url, { method: 'HEAD' }).catch(() => null);
     if (r?.ok) setFoto(url + '?t=' + Date.now());
   }
