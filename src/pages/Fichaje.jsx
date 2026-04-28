@@ -1,13 +1,13 @@
-// src/pages/Fichaje.jsx
 import { useEffect, useState } from 'react';
 import { fichajesApi } from '../api/apis.js';
 import PageHeader from '../components/PageHeader.jsx';
 
 export default function Fichaje() {
-  const [estado, setEstado]     = useState(null); // { activo, entrada }
-  const [semana, setSemana]     = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [hora, setHora]         = useState(new Date());
+  const [estado, setEstado]   = useState(null);
+  const [semana, setSemana]   = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hora, setHora]       = useState(new Date());
+  const [msg, setMsg]         = useState(null); // { tipo: 'ok'|'error', texto }
 
   useEffect(() => {
     fichajesApi.estadoHoy().then(r => setEstado(r.data)).catch(() => {});
@@ -18,6 +18,7 @@ export default function Fichaje() {
 
   async function fichar() {
     setLoading(true);
+    setMsg(null);
     try {
       let lat = null, lng = null;
       try {
@@ -26,19 +27,26 @@ export default function Fichaje() {
         );
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
-      } catch {} // GPS opcional
+      } catch {
+        setMsg({ tipo: 'error', texto: 'No se pudo obtener tu ubicación. Activá el GPS e intentá de nuevo.' });
+        setLoading(false);
+        return;
+      }
 
       if (estado?.activo) {
         await fichajesApi.salida(lat, lng);
         setEstado({ activo: false, entrada: null });
+        setMsg({ tipo: 'ok', texto: '✓ Salida registrada correctamente.' });
       } else {
         await fichajesApi.entrada(lat, lng);
         setEstado({ activo: true, entrada: new Date().toISOString() });
+        setMsg({ tipo: 'ok', texto: '✓ Entrada registrada correctamente.' });
       }
       const r = await fichajesApi.semana();
       setSemana(r.data);
     } catch (err) {
-      alert(err.response?.data?.error || 'Error al fichar.');
+      const errorTexto = err.response?.data?.error || 'Error al fichar.';
+      setMsg({ tipo: 'error', texto: errorTexto });
     } finally {
       setLoading(false);
     }
@@ -61,6 +69,17 @@ export default function Fichaje() {
             </p>
           )}
         </div>
+
+        {msg && (
+          <div style={{
+            marginBottom: 16, padding: '12px 16px', borderRadius: 10, fontSize: 13,
+            background: msg.tipo === 'ok' ? '#E1F5EE' : '#FCEBEB',
+            color: msg.tipo === 'ok' ? '#0F6E56' : '#A32D2D',
+            border: `1px solid ${msg.tipo === 'ok' ? '#A7E3CE' : '#F5C6C6'}`
+          }}>
+            {msg.texto}
+          </div>
+        )}
 
         <button onClick={fichar} disabled={loading || estado === null}
           className={`btn ${estado?.activo ? 'btn-danger' : 'btn-success'}`}
