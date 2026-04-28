@@ -94,7 +94,7 @@ function FichajesAdmin({ token, s }) {
   }
   async function exportarExcel() {
     const XLSX = await import('xlsx');
-    const filas = fichajes.map(f => ({ Empleado: f.nombre_completo || '', Legajo: f.legajo || '', Fecha: f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '', Entrada: f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '', Salida: f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '', Duracion: calcDuracion(f.entrada, f.salida), Estado: f.estado || '' }));
+    const filas = fichajes.map(f => ({ Empleado: f.nombre_completo || '', Legajo: f.legajo || '', Fecha: f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '', Entrada: f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '', Salida: f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '', Duracion: calcDuracion(f.entrada, f.salida), Estado: f.estado || '', Lat_entrada: f.lat_entrada || '', Lng_entrada: f.lng_entrada || '' }));
     const ws = XLSX.utils.json_to_sheet(filas);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Fichajes');
@@ -109,7 +109,7 @@ function FichajesAdmin({ token, s }) {
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr>
-          {['Empleado','Legajo','Fecha','Entrada','Salida','Duracion','Estado'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>)}
+        {['Empleado','Legajo','Fecha','Entrada','Salida','Duracion','Estado','Ubicacion'].map(h =>   <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>)}
         </tr></thead>
         <tbody>
           {fichajes.length === 0 ? <tr><td colSpan={7} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin fichajes</td></tr>
@@ -122,7 +122,12 @@ function FichajesAdmin({ token, s }) {
               <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '-'}</td>
               <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
               <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
-            </tr>
+           <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888' }}>
+  {f.lat_entrada && f.lng_entrada
+    ? <a href={`https://www.google.com/maps?q=${f.lat_entrada},${f.lng_entrada}`} target="_blank" rel="noreferrer" style={{ color: '#1D9E75', textDecoration: 'none' }}>📍 Ver mapa</a>
+    : '—'}
+</td>
+ </tr>
           ))}
         </tbody>
       </table>
