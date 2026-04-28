@@ -58,7 +58,7 @@ export default function Beneficios() {
       <div style={{ background: 'linear-gradient(135deg, #1D9E75, #0F6E56)', borderRadius: 16, padding: '20px', color: '#fff', marginBottom: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
-            <img src={LOGO} alt="MECAN" style={{ height: 32, marginBottom: 12, filter: 'brightness(0) invert(1)' }} />
+            <img src={LOGO} alt="MECAN" style={{ height: 32, marginBottom: 12, filter: 'none' }} />
             <div style={{ fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', opacity: 0.8, marginBottom: 6 }}>Credencial de beneficios</div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{empleado?.nombreCompleto}</div>
             <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>{empleado?.cargo} — {empleado?.area}</div>
