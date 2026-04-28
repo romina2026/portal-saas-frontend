@@ -123,9 +123,8 @@ function FichajesAdmin({ token, s }) {
               <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
               <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span></td>
            <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#888' }}>
-  {f.lat_entrada && f.lng_entrada
-    ? <a href={`https://www.google.com/maps?q=${f.lat_entrada},${f.lng_entrada}`} target="_blank" rel="noreferrer" style={{ color: '#1D9E75', textDecoration: 'none' }}>📍 Ver mapa</a>
-    : '—'}
+  {f.sucursal || '—'}
+    ? <a href={`https://www.google.com/maps?q=${f.lat_entrada},${f.sucursal || '—'}
 </td>
  </tr>
           ))}
