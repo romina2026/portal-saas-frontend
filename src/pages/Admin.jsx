@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
@@ -79,7 +79,6 @@ function CtaCteAdmin({ token, s }) {
     const d = new Date();
     setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
   }, []);
-
   async function procesar() {
     if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
     if (!periodo) { setMsg('Escribi el periodo'); return; }
@@ -88,14 +87,13 @@ function CtaCteAdmin({ token, s }) {
       const pdfjsLib = await import('pdfjs-dist');
       pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdfBytes = new Uint8Array(arrayBuffer);
-      const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
       const saldos = [];
       const isSaldo = s => /^-?\d{1,3}(\.\d{3})*,\d{2}$/.test(s);
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        const items = content.items.map(x => x.str.trim()).filter(x => x.trim() !== "");
+        const items = content.items.map(x => x.str.trim()).filter(x => x !== '');
         for (let j = 0; j < items.length; j++) {
           if (/^\d+$/.test(items[j]) && Number(items[j]) > 0 && items[j].length <= 8) {
             const codigo = items[j];
@@ -104,39 +102,13 @@ function CtaCteAdmin({ token, s }) {
               if (isSaldo(items[k])) { saldoStr = items[k]; }
             }
             if (saldoStr) {
-              const saldo = parseFloat(saldoStr.replace(/\./g, "").replace(",", "."));
-              if (!isNaN(saldo)) saldos.push({ codigo, saldo });
-            }
-          }
-        }
-      }
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const items = content.items.map(x => x.str.trim()).filter(x => x);
-        // Buscar codigo (numero al principio) y saldo (ultimo numero de la fila)
-        // El PDF tiene items separados, reconstruimos buscando patrones
-        let j = 0;
-        while (j < items.length) {
-          // Buscar un item que sea solo numeros (el codigo)
-          if (/^\d+$/.test(items[j]) && items[j].length <= 8) {
-            const codigo = items[j];
-            // Buscar hacia adelante el ultimo numero con formato de saldo
-            let saldoStr = null;
-            for (let k = j + 1; k < Math.min(j + 20, items.length); k++) {
-              if (/^\d{1,3}(\.\d{3})*,\d{2}$/.test(items[k])) {
-                saldoStr = items[k];
-              }
-            }
-            if (saldoStr) {
               const saldo = parseFloat(saldoStr.replace(/\./g, '').replace(',', '.'));
               if (!isNaN(saldo)) saldos.push({ codigo, saldo });
             }
           }
-          j++;
         }
       }
-      setMsg('Encontrados ' + saldos.length + ' saldos. Enviando...');
+      setMsg('Enviando ' + saldos.length + ' saldos...');
       const r = await fetch(API + '/admin/subir-cta-cte', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -147,7 +119,6 @@ function CtaCteAdmin({ token, s }) {
     } catch (e) { setMsg('Error: ' + e.message); }
     setCargando(false);
   }
-
   return (
     <div style={s.card}>
       <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de Cuenta Corriente</h3>
@@ -306,7 +277,7 @@ function FichajesAdmin({ token, s }) {
                 <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
                   <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
                 </td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || 'â€”'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || '—'}</td>
               </tr>
             ))}
         </tbody>
@@ -363,7 +334,7 @@ function AvisosAdmin({ token, s }) {
         <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Avisos activos</h3>
         {avisos.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay avisos</p> : avisos.map(a => (
           <div key={a.id} style={{ padding: '12px', borderRadius: 8, border: `1px solid ${a.importante ? '#F5A623' : '#e5e5e5'}`, background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && 'âš ï¸ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
+            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && '⚠️ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
             <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(a.id)}>Eliminar</button>
           </div>
         ))}
@@ -387,7 +358,6 @@ export default function Admin() {
   const [cargando, setCargando] = useState(false);
   const [modalEmp, setModalEmp] = useState(false);
   const [editandoEmp, setEditandoEmp] = useState(null);
-  const [editandoEmp, setEditandoEmp] = useState(null);
   const [empForm, setEmpForm] = useState({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' });
   useEffect(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }, []);
   useEffect(() => { if (!logueado) return; if (tab === 'empleados') cargarEmpleados(); if (tab === 'solicitudes') cargarSolicitudes(); }, [tab, logueado]);
@@ -401,6 +371,16 @@ export default function Admin() {
   }
   async function cargarEmpleados() { try { const r = await fetch(API + '/admin/empleados', { headers: H() }); setEmpleados(await r.json()); } catch (e) { } }
   async function cargarSolicitudes() { try { const r = await fetch(API + '/admin/solicitudes', { headers: H() }); setSolicitudes(await r.json()); } catch (e) { } }
+  function abrirNuevoEmp() {
+    setEditandoEmp(null);
+    setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' });
+    setModalEmp(true);
+  }
+  function abrirEditarEmp(e) {
+    setEditandoEmp(e.id);
+    setEmpForm({ legajo: e.legajo || '', nombre_completo: e.nombre_completo || '', cargo: e.cargo || '', area: e.area || '', manager_codigo: e.manager_codigo || '', codigo_cliente: e.codigo_cliente || '', password: '' });
+    setModalEmp(true);
+  }
   async function procesarPDF() {
     if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
     if (!periodo) { setMsg('Escribi el periodo'); return; }
@@ -444,8 +424,6 @@ export default function Admin() {
     } catch (e) { setMsg('Error: ' + e.message); }
     setCargando(false);
   }
-  function abrirEditarEmp(e) { setEditandoEmp(e.id); setEmpForm({ legajo: e.legajo, nombre_completo: e.nombre_completo, cargo: e.cargo || '', area: e.area || '', manager_codigo: e.manager_codigo || '', codigo_cliente: e.codigo_cliente || '', password: '' }); setModalEmp(true); }
-  function abrirEditarEmp(e) { setEditandoEmp(e.id); setEmpForm({ legajo: e.legajo, nombre_completo: e.nombre_completo, cargo: e.cargo || '', area: e.area || '', manager_codigo: e.manager_codigo || '', codigo_cliente: e.codigo_cliente || '', password: '' }); setModalEmp(true); }
   async function guardarEmpleado() {
     try {
       const url = editandoEmp ? API + '/admin/empleados/' + editandoEmp : API + '/admin/empleados';
@@ -453,7 +431,7 @@ export default function Admin() {
       const r = await fetch(url, { method, headers: H(), body: JSON.stringify(empForm) });
       const data = await r.json();
       if (data.error) { alert(data.error); return; }
-      alert('Empleado guardado'); setModalEmp(false); setEditandoEmp(null); setEditandoEmp(null);
+      alert('Empleado guardado'); setModalEmp(false); setEditandoEmp(null);
       setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' }); cargarEmpleados();
     } catch (e) { alert(e.message); }
   }
@@ -515,22 +493,58 @@ export default function Admin() {
       {tab === 'cta-cte' && <CtaCteAdmin token={token} s={s} />}
       {tab === 'empleados' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}><button style={s.btnP} onClick={() => setModalEmp(true)}>+ Agregar empleado</button></div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <button style={s.btnP} onClick={abrirNuevoEmp}>+ Agregar empleado</button>
+          </div>
           <div style={s.card}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Area</th><th style={s.th}>Cod. Cliente</th><th style={s.th}>Acciones</th><th style={s.th}>Acciones</th></tr></thead>
-              <tbody>{Array.isArray(empleados) && empleados.map(e => <tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo || '-'}</td><td style={s.td}>{e.area || '-'}</td><td style={s.td}>{e.codigo_cliente || '-'}</td><td style={s.td}><button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditarEmp(e)}>Editar</button></td></tr>)}</tbody>
+              <thead><tr>
+                <th style={s.th}>Legajo</th>
+                <th style={s.th}>Nombre</th>
+                <th style={s.th}>Cargo</th>
+                <th style={s.th}>Area</th>
+                <th style={s.th}>Cod. Cliente</th>
+                <th style={s.th}>Acciones</th>
+              </tr></thead>
+              <tbody>{Array.isArray(empleados) && empleados.map(e => (
+                <tr key={e.id}>
+                  <td style={s.td}>{e.legajo}</td>
+                  <td style={s.td}>{e.nombre_completo}</td>
+                  <td style={s.td}>{e.cargo || '-'}</td>
+                  <td style={s.td}>{e.area || '-'}</td>
+                  <td style={s.td}>{e.codigo_cliente || '-'}</td>
+                  <td style={s.td}>
+                    <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditarEmp(e)}>Editar</button>
+                  </td>
+                </tr>
+              ))}</tbody>
             </table>
           </div>
           {modalEmp && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
               <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 420, maxWidth: '95vw' }}>
                 <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editandoEmp ? 'Editar empleado' : 'Agregar empleado'}</h3>
-                {['legajo','nombre_completo','cargo','area','manager_codigo','codigo_cliente','password'].map(k => (
-                  <div key={k}><label style={s.label}>{k === 'nombre_completo' ? 'Nombre' : k === 'manager_codigo' ? 'Cod. Manager' : k === 'password' ? 'Contrasena' : k === 'codigo_cliente' ? 'Cod. Cliente' : k}</label><input style={s.input} value={empForm[k]} onChange={e => setEmpForm({ ...empForm, [k]: e.target.value })} /></div>
+                {[
+                  { k: 'legajo', label: 'Legajo' },
+                  { k: 'nombre_completo', label: 'Nombre' },
+                  { k: 'cargo', label: 'Cargo' },
+                  { k: 'area', label: 'Area' },
+                  { k: 'manager_codigo', label: 'Cod. Manager' },
+                  { k: 'codigo_cliente', label: 'Cod. Cliente (cta cte)' },
+                  { k: 'password', label: editandoEmp ? 'Nueva contrasena (dejar vacio para no cambiar)' : 'Contrasena' },
+                ].map(({ k, label }) => (
+                  <div key={k}>
+                    <label style={s.label}>{label}</label>
+                    <input
+                      style={s.input}
+                      type={k === 'password' ? 'password' : 'text'}
+                      value={empForm[k]}
+                      onChange={e => setEmpForm({ ...empForm, [k]: e.target.value })}
+                    />
+                  </div>
                 ))}
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
-                  <button style={s.btn} onClick={() => setModalEmp(false)}>Cancelar</button>
+                  <button style={s.btn} onClick={() => { setModalEmp(false); setEditandoEmp(null); }}>Cancelar</button>
                   <button style={s.btnP} onClick={guardarEmpleado}>Guardar</button>
                 </div>
               </div>
@@ -560,6 +574,3 @@ export default function Admin() {
     </div>
   );
 }
-
-
-
