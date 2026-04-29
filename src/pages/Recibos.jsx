@@ -5,7 +5,8 @@ import PageHeader from '../components/PageHeader.jsx';
 export default function Recibos() {
   const [recibos, setRecibos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [descargando, setDescargando] = useState(null);
+  const [urls, setUrls] = useState({});
+  const [cargando, setCargando] = useState(null);
 
   useEffect(() => {
     recibosApi.listar()
@@ -13,23 +14,20 @@ export default function Recibos() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-async function descargar(id, periodo) {
-    setDescargando(id);
+
+  async function generarLink(id) {
+    if (urls[id]) return;
+    setCargando(id);
     try {
       const { data } = await recibosApi.getUrlDescarga(id);
-      const a = document.createElement('a');
-      a.href = data.url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => document.body.removeChild(a), 100);
+      setUrls(prev => ({ ...prev, [id]: data.url }));
     } catch {
-      alert('Error al descargar. Intentá de nuevo.');
+      alert('Error al generar el enlace.');
     } finally {
-      setDescargando(null);
+      setCargando(null);
     }
   }
+
   return (
     <div>
       <PageHeader title="Recibos de sueldo" sub="Tus recibos disponibles" />
@@ -47,10 +45,18 @@ async function descargar(id, periodo) {
                   {r.monto_neto ? `$${Number(r.monto_neto).toLocaleString('es-AR')}` : 'Emitido'}
                 </p>
               </div>
-              <button onClick={() => descargar(r.id, r.periodo)} disabled={descargando === r.id}
-                className="btn btn-primary" style={{ width: 'auto', padding: '8px 16px', fontSize: 13 }}>
-                {descargando === r.id ? '...' : 'Descargar'}
-              </button>
+              {urls[r.id] ? (
+                <a href={urls[r.id]} target="_blank" rel="noopener noreferrer"
+                  className="btn btn-primary"
+                  style={{ width: 'auto', padding: '8px 16px', fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>
+                  Ver recibo
+                </a>
+              ) : (
+                <button onClick={() => generarLink(r.id)} disabled={cargando === r.id}
+                  className="btn btn-primary" style={{ width: 'auto', padding: '8px 16px', fontSize: 13 }}>
+                  {cargando === r.id ? '...' : 'Descargar'}
+                </button>
+              )}
             </div>
           ))}
         </div>
