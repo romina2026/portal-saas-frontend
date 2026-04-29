@@ -46,7 +46,7 @@ export default function Recibos() {
                 </p>
               </div>
               {urls[r.id] ? (
-                <a href={urls[r.id]} target="_blank" rel="noopener noreferrer"
+               <a href={urls[r.id]} rel="noopener noreferrer"
                   className="btn btn-primary"
                   style={{ width: 'auto', padding: '8px 16px', fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>
                   Ver recibo
