@@ -13,12 +13,11 @@ export default function Recibos() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-
- async function descargar(id, periodo) {
+async function descargar(id, periodo) {
     setDescargando(id);
     try {
       const { data } = await recibosApi.getUrlDescarga(id);
-      window.location.href = data.url;
+      window.open(data.url, '_blank');
     } catch {
       alert('Error al descargar. Intentá de nuevo.');
     } finally {
