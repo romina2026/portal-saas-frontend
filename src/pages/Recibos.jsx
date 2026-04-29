@@ -14,27 +14,17 @@ export default function Recibos() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function descargar(id, periodo) {
+ async function descargar(id, periodo) {
     setDescargando(id);
     try {
       const { data } = await recibosApi.getUrlDescarga(id);
-      const response = await fetch(data.url);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `recibo_${periodo || id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.location.href = data.url;
     } catch {
       alert('Error al descargar. Intentá de nuevo.');
     } finally {
       setDescargando(null);
     }
   }
-
   return (
     <div>
       <PageHeader title="Recibos de sueldo" sub="Tus recibos disponibles" />
