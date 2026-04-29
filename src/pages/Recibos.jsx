@@ -17,7 +17,13 @@ async function descargar(id, periodo) {
     setDescargando(id);
     try {
       const { data } = await recibosApi.getUrlDescarga(id);
-      window.open(data.url, '_blank');
+      const a = document.createElement('a');
+      a.href = data.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 100);
     } catch {
       alert('Error al descargar. Intentá de nuevo.');
     } finally {
