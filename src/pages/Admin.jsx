@@ -386,7 +386,9 @@ export default function Admin() {
   const [resultado, setResultado] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [modalEmp, setModalEmp] = useState(false);
-  const [empForm, setEmpForm] = useState({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', password: '' });
+  const [editandoEmp, setEditandoEmp] = useState(null);
+  const [editandoEmp, setEditandoEmp] = useState(null);
+  const [empForm, setEmpForm] = useState({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' });
   useEffect(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }, []);
   useEffect(() => { if (!logueado) return; if (tab === 'empleados') cargarEmpleados(); if (tab === 'solicitudes') cargarSolicitudes(); }, [tab, logueado]);
   const H = () => ({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token });
@@ -442,13 +444,17 @@ export default function Admin() {
     } catch (e) { setMsg('Error: ' + e.message); }
     setCargando(false);
   }
+  function abrirEditarEmp(e) { setEditandoEmp(e.id); setEmpForm({ legajo: e.legajo, nombre_completo: e.nombre_completo, cargo: e.cargo || '', area: e.area || '', manager_codigo: e.manager_codigo || '', codigo_cliente: e.codigo_cliente || '', password: '' }); setModalEmp(true); }
+  function abrirEditarEmp(e) { setEditandoEmp(e.id); setEmpForm({ legajo: e.legajo, nombre_completo: e.nombre_completo, cargo: e.cargo || '', area: e.area || '', manager_codigo: e.manager_codigo || '', codigo_cliente: e.codigo_cliente || '', password: '' }); setModalEmp(true); }
   async function guardarEmpleado() {
     try {
-      const r = await fetch(API + '/admin/empleados', { method: 'POST', headers: H(), body: JSON.stringify(empForm) });
+      const url = editandoEmp ? API + '/admin/empleados/' + editandoEmp : API + '/admin/empleados';
+      const method = editandoEmp ? 'PUT' : 'POST';
+      const r = await fetch(url, { method, headers: H(), body: JSON.stringify(empForm) });
       const data = await r.json();
       if (data.error) { alert(data.error); return; }
-      alert('Empleado guardado'); setModalEmp(false);
-      setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', password: '' }); cargarEmpleados();
+      alert('Empleado guardado'); setModalEmp(false); setEditandoEmp(null); setEditandoEmp(null);
+      setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' }); cargarEmpleados();
     } catch (e) { alert(e.message); }
   }
   async function responder(id, estado) {
@@ -512,14 +518,14 @@ export default function Admin() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}><button style={s.btnP} onClick={() => setModalEmp(true)}>+ Agregar empleado</button></div>
           <div style={s.card}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Area</th><th style={s.th}>Cod. Cliente</th></tr></thead>
-              <tbody>{Array.isArray(empleados) && empleados.map(e => <tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo || '-'}</td><td style={s.td}>{e.area || '-'}</td><td style={s.td}>{e.codigo_cliente || '-'}</td></tr>)}</tbody>
+              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Area</th><th style={s.th}>Cod. Cliente</th><th style={s.th}>Acciones</th><th style={s.th}>Acciones</th></tr></thead>
+              <tbody>{Array.isArray(empleados) && empleados.map(e => <tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo || '-'}</td><td style={s.td}>{e.area || '-'}</td><td style={s.td}>{e.codigo_cliente || '-'}</td><td style={s.td}><button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditarEmp(e)}>Editar</button></td></tr>)}</tbody>
             </table>
           </div>
           {modalEmp && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
               <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 420, maxWidth: '95vw' }}>
-                <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Agregar empleado</h3>
+                <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editandoEmp ? 'Editar empleado' : 'Agregar empleado'}</h3>
                 {['legajo','nombre_completo','cargo','area','manager_codigo','codigo_cliente','password'].map(k => (
                   <div key={k}><label style={s.label}>{k === 'nombre_completo' ? 'Nombre' : k === 'manager_codigo' ? 'Cod. Manager' : k === 'password' ? 'Contrasena' : k === 'codigo_cliente' ? 'Cod. Cliente' : k}</label><input style={s.input} value={empForm[k]} onChange={e => setEmpForm({ ...empForm, [k]: e.target.value })} /></div>
                 ))}
@@ -554,5 +560,6 @@ export default function Admin() {
     </div>
   );
 }
+
 
 
