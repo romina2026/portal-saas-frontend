@@ -1,4 +1,3 @@
-// src/pages/Recibos.jsx
 import { useEffect, useState } from 'react';
 import { recibosApi } from '../api/apis.js';
 import PageHeader from '../components/PageHeader.jsx';
@@ -15,13 +14,22 @@ export default function Recibos() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function descargar(id) {
+  async function descargar(id, periodo) {
     setDescargando(id);
     try {
       const { data } = await recibosApi.getUrlDescarga(id);
-      window.open(data.url, '_blank');
+      const response = await fetch(data.url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recibo_${periodo || id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch {
-      alert('Error al generar el enlace. Intentá de nuevo.');
+      alert('Error al descargar. Intentá de nuevo.');
     } finally {
       setDescargando(null);
     }
@@ -44,7 +52,7 @@ export default function Recibos() {
                   {r.monto_neto ? `$${Number(r.monto_neto).toLocaleString('es-AR')}` : 'Emitido'}
                 </p>
               </div>
-              <button onClick={() => descargar(r.id)} disabled={descargando === r.id}
+              <button onClick={() => descargar(r.id, r.periodo)} disabled={descargando === r.id}
                 className="btn btn-primary" style={{ width: 'auto', padding: '8px 16px', fontSize: 13 }}>
                 {descargando === r.id ? '...' : 'Descargar'}
               </button>
