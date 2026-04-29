@@ -512,16 +512,16 @@ export default function Admin() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}><button style={s.btnP} onClick={() => setModalEmp(true)}>+ Agregar empleado</button></div>
           <div style={s.card}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Area</th><th style={s.th}>Cod. Manager</th></tr></thead>
-              <tbody>{Array.isArray(empleados) && empleados.map(e => <tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo || '-'}</td><td style={s.td}>{e.area || '-'}</td><td style={s.td}>{e.manager_codigo || '-'}</td></tr>)}</tbody>
+              <thead><tr><th style={s.th}>Legajo</th><th style={s.th}>Nombre</th><th style={s.th}>Cargo</th><th style={s.th}>Area</th><th style={s.th}>Cod. Cliente</th></tr></thead>
+              <tbody>{Array.isArray(empleados) && empleados.map(e => <tr key={e.id}><td style={s.td}>{e.legajo}</td><td style={s.td}>{e.nombre_completo}</td><td style={s.td}>{e.cargo || '-'}</td><td style={s.td}>{e.area || '-'}</td><td style={s.td}>{e.codigo_cliente || '-'}</td></tr>)}</tbody>
             </table>
           </div>
           {modalEmp && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
               <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 420, maxWidth: '95vw' }}>
                 <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Agregar empleado</h3>
-                {['legajo','nombre_completo','cargo','area','manager_codigo','password'].map(k => (
-                  <div key={k}><label style={s.label}>{k === 'nombre_completo' ? 'Nombre' : k === 'manager_codigo' ? 'Cod. Manager' : k === 'password' ? 'Contrasena' : k}</label><input style={s.input} value={empForm[k]} onChange={e => setEmpForm({ ...empForm, [k]: e.target.value })} /></div>
+                {['legajo','nombre_completo','cargo','area','manager_codigo','codigo_cliente','password'].map(k => (
+                  <div key={k}><label style={s.label}>{k === 'nombre_completo' ? 'Nombre' : k === 'manager_codigo' ? 'Cod. Manager' : k === 'password' ? 'Contrasena' : k === 'codigo_cliente' ? 'Cod. Cliente' : k}</label><input style={s.input} value={empForm[k]} onChange={e => setEmpForm({ ...empForm, [k]: e.target.value })} /></div>
                 ))}
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
                   <button style={s.btn} onClick={() => setModalEmp(false)}>Cancelar</button>
@@ -554,4 +554,5 @@ export default function Admin() {
     </div>
   );
 }
+
 
