@@ -343,6 +343,162 @@ function AvisosAdmin({ token, s }) {
   );
 }
 
+
+function CapacitacionesAdmin({ token, s }) {
+  const [capacitaciones, setCapacitaciones] = useState([]);
+  const [asignaciones, setAsignaciones] = useState([]);
+  const [empleados, setEmpleados] = useState([]);
+  const [modalNueva, setModalNueva] = useState(false);
+  const [modalAsignar, setModalAsignar] = useState(null);
+  const [form, setForm] = useState({ nombre: '', descripcion: '', fecha_limite: '' });
+  const [seleccionados, setSeleccionados] = useState([]);
+  const [msg, setMsg] = useState('');
+  const [filtro, setFiltro] = useState('');
+
+  useEffect(() => { cargar(); }, []);
+
+  async function cargar() {
+    try {
+      const [rc, ra, re] = await Promise.all([
+        fetch(API + '/capacitaciones', { headers: { 'Authorization': 'Bearer ' + token } }),
+        fetch(API + '/capacitaciones/admin', { headers: { 'Authorization': 'Bearer ' + token } }),
+        fetch(API + '/admin/empleados', { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } }),
+      ]);
+      setCapacitaciones(await rc.json());
+      setAsignaciones(await ra.json());
+      setEmpleados(await re.json());
+    } catch (e) { }
+  }
+
+  async function crearCapacitacion() {
+    if (!form.nombre) { setMsg('Completa el nombre'); return; }
+    try {
+      await fetch(API + '/capacitaciones', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(form) });
+      setModalNueva(false); setForm({ nombre: '', descripcion: '', fecha_limite: '' }); setMsg(''); cargar();
+    } catch (e) { setMsg('Error: ' + e.message); }
+  }
+
+  async function asignar() {
+    if (!seleccionados.length) { setMsg('Selecciona al menos un empleado'); return; }
+    try {
+      await fetch(API + '/capacitaciones/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ capacitacion_id: modalAsignar.id, empleado_ids: seleccionados }) });
+      setModalAsignar(null); setSeleccionados([]); setMsg(''); cargar();
+    } catch (e) { setMsg('Error: ' + e.message); }
+  }
+
+  async function completar(id) {
+    await fetch(API + '/capacitaciones/completar/' + id, { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } });
+    cargar();
+  }
+
+  async function eliminar(id) {
+    if (!confirm('Eliminar esta capacitacion?')) return;
+    await fetch(API + '/capacitaciones/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    cargar();
+  }
+
+  const asignacionesFiltradas = filtro
+    ? asignaciones.filter(a => a.nombre.toLowerCase().includes(filtro.toLowerCase()) || a.nombre_completo.toLowerCase().includes(filtro.toLowerCase()))
+    : asignaciones;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button style={s.btnP} onClick={() => setModalNueva(true)}>+ Nueva capacitacion</button>
+      </div>
+
+      <div style={s.card}>
+        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Capacitaciones disponibles</h3>
+        {capacitaciones.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay capacitaciones</p> : capacitaciones.map(c => (
+          <div key={c.id} style={{ padding: '12px', borderRadius: 8, border: '1px solid #e5e5e5', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{c.nombre}</div>
+              {c.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>{c.descripcion}</div>}
+              {c.fecha_limite && <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Fecha límite: {new Date(c.fecha_limite).toLocaleDateString('es-AR')}</div>}
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => { setModalAsignar(c); setSeleccionados([]); }}>Asignar</button>
+              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(c.id)}>Eliminar</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={s.card}>
+        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Asignaciones</h3>
+        <input style={{ ...s.input, maxWidth: 300, marginBottom: 12 }} placeholder="Buscar por capacitacion o empleado..." value={filtro} onChange={e => setFiltro(e.target.value)} />
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            {['Empleado','Legajo','Capacitacion','Fecha limite','Estado','Acciones'].map(h => (
+              <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {asignacionesFiltradas.length === 0
+              ? <tr><td colSpan={6} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin asignaciones</td></tr>
+              : asignacionesFiltradas.map((a, i) => (
+                <tr key={i}>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.nombre_completo}</td>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.legajo}</td>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.nombre}</td>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.fecha_limite ? new Date(a.fecha_limite).toLocaleDateString('es-AR') : '-'}</td>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: a.completado ? '#E1F5EE' : '#FAEEDA', color: a.completado ? '#0F6E56' : '#854F0B' }}>
+                      {a.completado ? 'Completada' : 'Pendiente'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
+                    {!a.completado && <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#0F6E56' }} onClick={() => completar(a.id)}>Marcar completada</button>}
+                    {a.completado && <span style={{ fontSize: 11, color: '#aaa' }}>{a.fecha_completado ? new Date(a.fecha_completado).toLocaleDateString('es-AR') : ''}</span>}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {modalNueva && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
+            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Nueva capacitacion</h3>
+            <label style={s.label}>Nombre</label><input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Seguridad e Higiene" />
+            <label style={s.label}>Descripcion</label><textarea style={{ ...s.input, minHeight: 60, resize: 'vertical' }} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+            <label style={s.label}>Fecha limite</label><input type="date" style={{ ...s.input, maxWidth: 200 }} value={form.fecha_limite} onChange={e => setForm({ ...form, fecha_limite: e.target.value })} />
+            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button style={s.btn} onClick={() => { setModalNueva(false); setMsg(''); }}>Cancelar</button>
+              <button style={s.btnP} onClick={crearCapacitacion}>Crear</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalAsignar && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 480, maxWidth: '95vw', maxHeight: '80vh', overflow: 'auto' }}>
+            <h3 style={{ fontSize: 15, marginBottom: '0.5rem' }}>Asignar: {modalAsignar.nombre}</h3>
+            <p style={{ fontSize: 12, color: '#888', marginBottom: '1rem' }}>Selecciona los empleados</p>
+            <div style={{ marginBottom: 12 }}>
+              {Array.isArray(empleados) && empleados.map(e => (
+                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <input type="checkbox" checked={seleccionados.includes(e.id)} onChange={ev => setSeleccionados(ev.target.checked ? [...seleccionados, e.id] : seleccionados.filter(x => x !== e.id))} />
+                  <span style={{ fontSize: 13 }}>{e.nombre_completo}</span>
+                  <span style={{ fontSize: 11, color: '#aaa' }}>{e.legajo}</span>
+                </div>
+              ))}
+            </div>
+            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button style={s.btn} onClick={() => { setModalAsignar(null); setMsg(''); }}>Cancelar</button>
+              <button style={s.btnP} onClick={asignar}>Asignar ({seleccionados.length})</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
   const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
@@ -466,9 +622,9 @@ export default function Admin() {
         <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos','cta-cte','empleados','solicitudes','fichajes','avisos','beneficios','ubicaciones'].map(t => (
+        {['recibos','cta-cte','empleados','solicitudes','fichajes','avisos','beneficios','ubicaciones','capacitaciones'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'recibos' ? 'Recibos' : t === 'cta-cte' ? 'Cta. Cte.' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : 'Ubicaciones'}
+            {t === 'recibos' ? 'Recibos' : t === 'cta-cte' ? 'Cta. Cte.' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : t === 'ubicaciones' ? 'Ubicaciones' : 'Capacitaciones'}
           </div>
         ))}
       </div>
@@ -571,6 +727,7 @@ export default function Admin() {
       {tab === 'avisos' && <AvisosAdmin token={token} s={s} />}
       {tab === 'beneficios' && <BeneficiosAdmin token={token} s={s} />}
       {tab === 'ubicaciones' && <UbicacionesAdmin token={token} s={s} />}
+      {tab === 'capacitaciones' && <CapacitacionesAdmin token={token} s={s} />}
     </div>
   );
 }
