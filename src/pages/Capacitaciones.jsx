@@ -1,7 +1,8 @@
 ﻿import { useEffect, useState } from 'react';
+import { api } from '../api/client.js';
 import PageHeader from '../components/PageHeader.jsx';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 
 export default function Capacitaciones() {
   const [capacitaciones, setCapacitaciones] = useState([]);
@@ -81,4 +82,5 @@ export default function Capacitaciones() {
     </div>
   );
 }
+
 
