@@ -18,6 +18,7 @@ export default function Home() {
     { label: 'RRHH', sub: 'Solicitudes', path: '/rrhh', color: '#FEF3C7', icon: '📋' },
     { label: 'Fichar', sub: 'Entrada / salida', path: '/fichaje', color: '#F3E8FF', icon: '🕐' },
     { label: 'Beneficios', sub: 'Ver mis descuentos', path: '/beneficios', color: '#FEE2E2', icon: '🎁' },
+    { label: 'Capacitaciones', sub: 'Mis capacitaciones', path: '/capacitaciones', color: '#E0F2FE', icon: '🎓' },
   ];
   return (
     <div style={{ padding: '24px 16px' }}>
@@ -60,3 +61,4 @@ export default function Home() {
     </div>
   );
 }
+
