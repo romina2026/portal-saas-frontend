@@ -1,20 +1,14 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import PageHeader from '../components/PageHeader.jsx';
-
-
 
 export default function Capacitaciones() {
   const [capacitaciones, setCapacitaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = JSON.parse(localStorage.getItem('portal-auth'))?.state?.token;
-    fetch(API + '/capacitaciones/empleado', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
-      .then(r => r.json())
-      .then(data => setCapacitaciones(Array.isArray(data) ? data : []))
+    api.get('/capacitaciones/empleado')
+      .then(r => setCapacitaciones(Array.isArray(r.data) ? r.data : []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -28,7 +22,7 @@ export default function Capacitaciones() {
       <div style={{ padding: '0 16px 16px' }}>
         {loading && <p style={{ color: 'var(--color-text-muted)', marginTop: 16 }}>Cargando...</p>}
         {!loading && capacitaciones.length === 0 && (
-          <p style={{ color: 'var(--color-text-muted)', marginTop: 16 }}>No tenÃ©s capacitaciones asignadas.</p>
+          <p style={{ color: 'var(--color-text-muted)', marginTop: 16 }}>No tenés capacitaciones asignadas.</p>
         )}
 
         {pendientes.length > 0 && (
@@ -43,7 +37,7 @@ export default function Capacitaciones() {
                       {c.descripcion && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 4 }}>{c.descripcion}</p>}
                       {c.fecha_limite && (
                         <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                          Fecha lÃ­mite: {new Date(c.fecha_limite).toLocaleDateString('es-AR')}
+                          Fecha limite: {new Date(c.fecha_limite).toLocaleDateString('es-AR')}
                         </p>
                       )}
                     </div>
@@ -82,5 +76,3 @@ export default function Capacitaciones() {
     </div>
   );
 }
-
-
