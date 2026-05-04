@@ -591,6 +591,19 @@ export default function Admin() {
       setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' }); cargarEmpleados();
     } catch (e) { alert(e.message); }
   }
+  async function eliminarEmp(id) {
+    if (!confirm('Desactivar este empleado?')) return;
+    try {
+      await fetch(API + '/admin/empleados/' + id, { method: 'DELETE', headers: H() });
+      cargarEmpleados();
+    } catch (e) { alert(e.message); }
+  }
+  async function desbloquearEmp(id) {
+    try {
+      await fetch(API + '/admin/empleados/' + id + '/desbloquear', { method: 'PUT', headers: H() });
+      alert('Empleado desbloqueado');
+    } catch (e) { alert(e.message); }
+  }
   async function responder(id, estado) {
     const respuesta = prompt('Comentario:') || '';
     try { await fetch(API + '/admin/solicitudes/' + id, { method: 'PUT', headers: H(), body: JSON.stringify({ estado, respuesta }) }); cargarSolicitudes(); } catch (e) { }
@@ -670,7 +683,11 @@ export default function Admin() {
                   <td style={s.td}>{e.area || '-'}</td>
                   <td style={s.td}>{e.codigo_cliente || '-'}</td>
                   <td style={s.td}>
-                    <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditarEmp(e)}>Editar</button>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditarEmp(e)}>Editar</button>
+                      <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px', color: '#1D9E75' }} onClick={() => desbloquearEmp(e.id)}>Desbloquear</button>
+                      <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px', color: '#A32D2D' }} onClick={() => eliminarEmp(e.id)}>Eliminar</button>
+                    </div>
                   </td>
                 </tr>
               ))}</tbody>
