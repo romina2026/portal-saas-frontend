@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
@@ -99,7 +99,7 @@ function CtaCteAdmin({ token, s }) {
             const codigo = items[j];
             let saldoStr = null;
             for (let k = j + 1; k < Math.min(j + 25, items.length); k++) {
-              if (isSaldo(items[k])) { saldoStr = items[k]; }
+              if (isSaldo(items[k])) { saldoStr = items[k]; break; }
             }
             if (saldoStr) {
               const saldo = parseFloat(saldoStr.replace(/\./g, '').replace(',', '.'));
@@ -277,7 +277,7 @@ function FichajesAdmin({ token, s }) {
                 <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
                   <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
                 </td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || '—'}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || 'â€”'}</td>
               </tr>
             ))}
         </tbody>
@@ -334,7 +334,7 @@ function AvisosAdmin({ token, s }) {
         <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Avisos activos</h3>
         {avisos.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay avisos</p> : avisos.map(a => (
           <div key={a.id} style={{ padding: '12px', borderRadius: 8, border: `1px solid ${a.importante ? '#F5A623' : '#e5e5e5'}`, background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && '⚠️ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
+            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && 'âš ï¸ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
             <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(a.id)}>Eliminar</button>
           </div>
         ))}
@@ -414,7 +414,7 @@ function CapacitacionesAdmin({ token, s }) {
             <div>
               <div style={{ fontWeight: 600, fontSize: 14 }}>{c.nombre}</div>
               {c.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>{c.descripcion}</div>}
-              {c.fecha_limite && <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Fecha límite: {new Date(c.fecha_limite).toLocaleDateString('es-AR')}</div>}
+              {c.fecha_limite && <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Fecha lÃ­mite: {new Date(c.fecha_limite).toLocaleDateString('es-AR')}</div>}
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => { setModalAsignar(c); setSeleccionados([]); }}>Asignar</button>
@@ -748,3 +748,4 @@ export default function Admin() {
     </div>
   );
 }
+
