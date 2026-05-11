@@ -1,4 +1,4 @@
-// vite.config.js
+﻿// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Portal del Empleado',
-        short_name: 'Mi Portal',
-        description: 'Recibos, cuenta corriente y RRHH desde tu celular',
+        name: 'MECAN Portal',
+        short_name: 'MECAN',
+        description: 'Portal del empleado MECAN',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

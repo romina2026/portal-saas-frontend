@@ -27,3 +27,13 @@ export const fichajesApi = {
   entrada:    (lat, lng)   => api.post('/fichajes/entrada', { lat, lng }),
   salida:     (lat, lng)   => api.post('/fichajes/salida',  { lat, lng }),
 };
+export const garantiasApi = {
+  etapas:          ()             => api.get('/garantias/etapas'),
+  listar:          (params = {})  => api.get('/garantias', { params }),
+  getOrden:        (id)           => api.get(`/garantias/${id}`),
+  crear:           (datos)        => api.post('/garantias', datos),
+  cambiarEtapa:    (id, datos)    => api.post(`/garantias/${id}/etapa`, datos),
+  registrarNotif:  (id, datos)    => api.post(`/garantias/${id}/notificacion`, datos),
+  getHistorial:    (id)           => api.get(`/garantias/${id}/historial`),
+  consultaPublica: (nroOrden)     => api.get(`/garantias/publica/${encodeURIComponent(nroOrden)}`),
+};

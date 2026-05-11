@@ -10,6 +10,7 @@ import CambiarPass    from './pages/CambiarPass.jsx';
 import Beneficios     from './pages/Beneficios.jsx';
 import Capacitaciones from './pages/Capacitaciones.jsx';
 import Admin          from './pages/Admin.jsx';
+import GarantiasAdmin from './pages/GarantiasAdmin.jsx';
 import BottomNav      from './components/BottomNav.jsx';
 
 function PrivateRoute({ children }) {
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/fichaje" element={<PrivateRoute><Layout><Fichaje /></Layout></PrivateRoute>} />
       <Route path="/capacitaciones" element={<PrivateRoute><Layout><Capacitaciones /></Layout></PrivateRoute>} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/garantias" element={<PrivateRoute><Layout><GarantiasAdmin /></Layout></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
