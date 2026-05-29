@@ -224,6 +224,55 @@ function BeneficiosAdmin({ token, s }) {
   );
 }
 
+function FirmasAdmin({ token, s }) {
+  const [recibos, setRecibos] = React.useState([]);
+  const [periodo, setPeriodo] = React.useState('');
+  const [cargando, setCargando] = React.useState(false);
+  React.useEffect(() => { const d = new Date(); d.setMonth(d.getMonth()-1); setPeriodo(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }, []);
+  async function cargar() {
+    setCargando(true);
+    try {
+      const r = await fetch(`${API}/admin/recibos?periodo=${periodo}`, { headers: { 'Authorization': 'Bearer ' + token } });
+      setRecibos(await r.json());
+    } catch(e) {} finally { setCargando(false); }
+  }
+  const firmados = recibos.filter(r => r.firmado_en).length;
+  const pendientes = recibos.filter(r => !r.firmado_en).length;
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div><label style={s.label}>Periodo (YYYY-MM)</label><input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-04" /></div>
+        <button style={s.btnP} onClick={cargar} disabled={cargando}>{cargando ? 'Cargando...' : 'Consultar'}</button>
+      </div>
+      {recibos.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: '1rem' }}>
+          <div style={{ background: '#E1F5EE', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#0F6E56' }}>{firmados}</div><div style={{ fontSize: 12 }}>Firmados</div></div>
+          <div style={{ background: '#FAEEDA', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#854F0B' }}>{pendientes}</div><div style={{ fontSize: 12 }}>Pendientes</div></div>
+        </div>
+      )}
+      {recibos.length > 0 && (
+        <div style={s.card}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              {['Empleado','Legajo','Estado','Fecha firma'].map(h => <th key={h} style={s.th}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {recibos.map((r,i) => (
+                <tr key={i}>
+                  <td style={s.td}>{r.nombre_completo}</td>
+                  <td style={s.td}>{r.legajo}</td>
+                  <td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: r.firmado_en ? '#E1F5EE' : '#FAEEDA', color: r.firmado_en ? '#0F6E56' : '#854F0B' }}>{r.firmado_en ? 'Firmado' : 'Pendiente'}</span></td>
+                  <td style={s.td}>{r.firmado_en ? new Date(r.firmado_en).toLocaleDateString('es-AR') : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FichajesAdmin({ token, s }) {
   const [fichajes, setFichajes] = useState([]);
   const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10));
@@ -635,9 +684,9 @@ export default function Admin() {
         <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
       </div>
       <div style={s.tabs}>
-        {['recibos','cta-cte','empleados','solicitudes','fichajes','avisos','beneficios','ubicaciones','capacitaciones'].map(t => (
+        {['recibos','cta-cte','empleados','solicitudes','fichajes','firmas','avisos','beneficios','ubicaciones','capacitaciones'].map(t => (
           <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'recibos' ? 'Recibos' : t === 'cta-cte' ? 'Cta. Cte.' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : t === 'ubicaciones' ? 'Ubicaciones' : 'Capacitaciones'}
+            {t === 'recibos' ? 'Recibos' : t === 'cta-cte' ? 'Cta. Cte.' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : t === 'ubicaciones' ? 'Ubicaciones' : t === 'firmas' ? 'Firmas' : 'Capacitaciones'}
           </div>
         ))}
       </div>
@@ -744,8 +793,10 @@ export default function Admin() {
       {tab === 'avisos' && <AvisosAdmin token={token} s={s} />}
       {tab === 'beneficios' && <BeneficiosAdmin token={token} s={s} />}
       {tab === 'ubicaciones' && <UbicacionesAdmin token={token} s={s} />}
+      {tab === 'firmas' && <FirmasAdmin token={token} s={s} />}
       {tab === 'capacitaciones' && <CapacitacionesAdmin token={token} s={s} />}
     </div>
   );
 }
+
 
