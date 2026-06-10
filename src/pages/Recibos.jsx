@@ -1,12 +1,13 @@
+// src/pages/Recibos.jsx
 import { useEffect, useState } from 'react';
 import { recibosApi } from '../api/apis.js';
 import { api } from '../api/client.js';
 import PageHeader from '../components/PageHeader.jsx';
 
 export default function Recibos() {
-  const [recibos, setRecibos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [urls, setUrls] = useState({});
+  const [recibos, setRecibos]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [urls, setUrls]         = useState({});
   const [cargando, setCargando] = useState(null);
   const [firmando, setFirmando] = useState(null);
   const [msgFirma, setMsgFirma] = useState({});
@@ -32,11 +33,11 @@ export default function Recibos() {
   }
 
   async function firmar(id) {
-    if (!confirm('¿Confirmas que recibiste este recibo de sueldo?')) return;
+    if (!confirm('¿Confirmás que recibiste este recibo de sueldo?')) return;
     setFirmando(id);
     try {
       await api.post(`/recibos/${id}/firmar`);
-      setRecibos(prev => prev.map(r => r.id === id ? { ...r, firmado_en: new Date().toISOString() } : r));
+      setRecibos(prev => prev.map(r => r.id === id ? { ...r, confirmado: true, fecha_confirmacion: new Date().toISOString() } : r));
       setMsgFirma(prev => ({ ...prev, [id]: 'Recibo confirmado correctamente.' }));
     } catch (err) {
       setMsgFirma(prev => ({ ...prev, [id]: err.response?.data?.error || 'Error al confirmar.' }));
@@ -59,12 +60,9 @@ export default function Recibos() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <p style={{ fontWeight: 600 }}>{formatPeriodo(r.periodo)}</p>
-                  <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                    {r.monto_neto ? `$${Number(r.monto_neto).toLocaleString('es-AR')}` : 'Emitido'}
-                  </p>
-                  {r.firmado_en && (
+                  {r.confirmado && (
                     <p style={{ fontSize: 12, color: 'var(--color-success)', marginTop: 4 }}>
-                      ✓ Confirmado el {new Date(r.firmado_en).toLocaleDateString('es-AR')}
+                      ✓ Confirmado el {new Date(r.fecha_confirmacion).toLocaleDateString('es-AR')}
                     </p>
                   )}
                   {msgFirma[r.id] && (
@@ -75,21 +73,21 @@ export default function Recibos() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
                   {urls[r.id] ? (
-                    <a href={urls[r.id]} rel="noopener noreferrer"
+                    <a href={urls[r.id]} target="_blank" rel="noopener noreferrer"
                       className="btn btn-primary"
-                      style={{ width: 'auto', padding: '8px 16px', fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>
+                      style={{ padding: '8px 16px', fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>
                       Ver recibo
                     </a>
                   ) : (
                     <button onClick={() => generarLink(r.id)} disabled={cargando === r.id}
-                      className="btn btn-primary" style={{ width: 'auto', padding: '8px 16px', fontSize: 13 }}>
+                      className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
                       {cargando === r.id ? '...' : 'Ver recibo'}
                     </button>
                   )}
-                  {!r.firmado_en && (
+                  {!r.confirmado && (
                     <button onClick={() => firmar(r.id)} disabled={firmando === r.id}
                       className="btn btn-ghost"
-                      style={{ width: 'auto', padding: '6px 12px', fontSize: 12, border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
+                      style={{ padding: '6px 12px', fontSize: 12, border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
                       {firmando === r.id ? '...' : '✓ Confirmar recepción'}
                     </button>
                   )}

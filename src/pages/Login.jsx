@@ -1,14 +1,17 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authApi } from '../api/auth.api.js';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuthStore } from '../store/auth.store.js';
 
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 export default function Login() {
-  const [legajo, setLegajo]     = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [empresaId, setEmpresaId] = useState('');
+  const [username, setUsername]   = useState('');
+  const [password, setPassword]   = useState('');
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
 
@@ -16,8 +19,12 @@ export default function Login() {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const { data } = await authApi.login(legajo, password);
-      setAuth(data.empleado, data.accessToken, data.refreshToken);
+      const { data } = await axios.post(`${BASE_URL}/auth/login`, {
+        username: username.trim(),
+        password,
+        empresa_id: empresaId.trim(),
+      });
+      setAuth(data.empleado, data.accessToken);
       navigate(data.debeCambiarPass ? '/cambiar-password' : '/');
     } catch (err) {
       setError(err.response?.data?.error || 'Error de conexión.');
@@ -29,14 +36,19 @@ export default function Login() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 24px', background: 'var(--color-bg)' }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 600, color: 'var(--color-text)' }}>Mi Portal</h1>
-        <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>Ingresá con tu legajo y contraseña</p>
+        <h1 style={{ fontSize: 26, fontWeight: 600, color: 'var(--color-text)' }}>Portal del Empleado</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>Ingresá con tus datos</p>
       </div>
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label>Legajo</label>
-          <input type="text" value={legajo} onChange={e => setLegajo(e.target.value)}
-            placeholder="001" autoComplete="username" inputMode="numeric" required />
+          <label>ID de Empresa</label>
+          <input type="text" value={empresaId} onChange={e => setEmpresaId(e.target.value)}
+            placeholder="ID de tu empresa" required />
+        </div>
+        <div>
+          <label>Usuario</label>
+          <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+            placeholder="Tu usuario" autoComplete="username" required />
         </div>
         <div>
           <label>Contraseña</label>

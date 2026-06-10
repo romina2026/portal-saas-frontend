@@ -1,150 +1,135 @@
-﻿import React, { useState, useEffect } from 'react';
+// src/pages/Admin.jsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PDFDocument } from 'pdf-lib';
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const SUPA_URL = 'https://huklwvkrykemdqpglwzr.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1a2x3dmtyeWtlbWRxcGdsd3pyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDYxMjEyMSwiZXhwIjoyMDkwMTg4MTIxfQ.hvbuWwtb0jjP06qd6ayZgOA_A3rRfxvN2Jl1HPQaWkg';
+import { useAuthStore } from '../store/auth.store.js';
+import { api } from '../api/client.js';
 
-function UbicacionesAdmin({ token, s }) {
-  const [ubicaciones, setUbicaciones] = useState([]);
-  const [modal, setModal] = useState(false);
-  const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ nombre: '', direccion: '', lat: '', lng: '', radio_metros: 100 });
-  const [msg, setMsg] = useState('');
-  useEffect(() => { cargar(); }, []);
-  async function cargar() {
-    try { const r = await fetch(API + '/ubicaciones', { headers: { 'Authorization': 'Bearer ' + token } }); setUbicaciones(await r.json()); } catch (e) { }
-  }
-  function abrirNuevo() { setEditando(null); setForm({ nombre: '', direccion: '', lat: '', lng: '', radio_metros: 100 }); setModal(true); }
-  function abrirEditar(u) { setEditando(u.id); setForm({ nombre: u.nombre, direccion: u.direccion, lat: u.lat, lng: u.lng, radio_metros: u.radio_metros || 100 }); setModal(true); }
-  async function guardar() {
-    if (!form.nombre || !form.lat || !form.lng) { setMsg('Completa nombre, lat y lng'); return; }
-    try {
-      if (editando) { await fetch(API + '/ubicaciones/' + editando, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ ...form, activo: true }) }); }
-      else { await fetch(API + '/ubicaciones', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(form) }); }
-      setModal(false); setMsg(''); cargar();
-    } catch (e) { setMsg('Error: ' + e.message); }
-  }
-  async function eliminar(id) {
-    if (!confirm('Desactivar esta ubicacion?')) return;
-    await fetch(API + '/ubicaciones/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); cargar();
-  }
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button style={s.btnP} onClick={abrirNuevo}>+ Agregar ubicacion</button>
-      </div>
-      <div style={s.card}>
-        {ubicaciones.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay ubicaciones</p> : ubicaciones.map(u => (
-          <div key={u.id} style={{ padding: '12px', borderRadius: 8, border: '1px solid #e5e5e5', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{u.nombre}</div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{u.direccion}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Lat: {u.lat} | Lng: {u.lng} | Radio: {u.radio_metros}m</div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => abrirEditar(u)}>Editar</button>
-              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(u.id)}>Eliminar</button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {modal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
-            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar ubicacion' : 'Nueva ubicacion'}</h3>
-            <label style={s.label}>Nombre</label><input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Casa Central" />
-            <label style={s.label}>Direccion</label><input style={s.input} value={form.direccion} onChange={e => setForm({ ...form, direccion: e.target.value })} placeholder="Ej: 12 de Octubre 626" />
-            <label style={s.label}>Latitud</label><input style={s.input} value={form.lat} onChange={e => setForm({ ...form, lat: e.target.value })} placeholder="Ej: -33.752903" />
-            <label style={s.label}>Longitud</label><input style={s.input} value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} placeholder="Ej: -61.976127" />
-            <label style={s.label}>Radio (metros)</label><input type="number" style={{ ...s.input, maxWidth: 120 }} value={form.radio_metros} onChange={e => setForm({ ...form, radio_metros: Number(e.target.value) })} />
-            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
-              <button style={s.btn} onClick={() => { setModal(false); setMsg(''); }}>Cancelar</button>
-              <button style={s.btnP} onClick={guardar}>{editando ? 'Guardar cambios' : 'Agregar'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || 'https://yafatdsiminstyalocxw.supabase.co';
+const SUPA_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY || '';
 
-function CtaCteAdmin({ token, s }) {
+const s = {
+  card: { background: '#fff', borderRadius: 12, border: '1px solid #e5e5e5', padding: '1.5rem', marginBottom: '1rem' },
+  th: { padding: '10px 12px', textAlign: 'left', fontSize: 12, color: '#888', fontWeight: 500, borderBottom: '1px solid #e5e5e5' },
+  td: { padding: '10px 12px', fontSize: 13, borderBottom: '1px solid #f0f0f0' },
+  btn: { padding: '6px 14px', borderRadius: 8, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 13 },
+  btnP: { padding: '6px 14px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  label: { fontSize: 12, color: '#555', display: 'block', marginBottom: 4, marginTop: 12 },
+  input: { width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, boxSizing: 'border-box' },
+};
+
+// ===================== RECIBOS =====================
+function RecibosAdmin() {
   const [pdfFile, setPdfFile] = useState(null);
   const [periodo, setPeriodo] = useState('');
   const [msg, setMsg] = useState('');
   const [resultado, setResultado] = useState(null);
   const [cargando, setCargando] = useState(false);
+
   useEffect(() => {
     const d = new Date();
+    d.setMonth(d.getMonth() - 1);
     setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
   }, []);
-  async function procesar() {
-    if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
-    if (!periodo) { setMsg('Escribi el periodo'); return; }
+
+  async function procesarPDF() {
+    if (!pdfFile) { setMsg('Seleccioná el PDF primero'); return; }
+    if (!periodo) { setMsg('Ingresá el periodo'); return; }
     setCargando(true); setMsg('Leyendo PDF...'); setResultado(null);
     try {
       const pdfjsLib = await import('pdfjs-dist');
       pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-      const saldos = [];
-      const isSaldo = s => /^-?\d{1,3}(\.\d{3})*,\d{2}$/.test(s);
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
+      const pdfBytes = new Uint8Array(arrayBuffer);
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const totalPags = pdfDoc.getPageCount();
+      setMsg(`Leyendo legajos... (${totalPags} páginas)`);
+      const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+      const empR = await api.get('/admin/empleados');
+      const empList = empR.data;
+      let procesados = 0, saltados = 0, noEncontrados = [];
+
+      for (let i = 0; i < totalPags; i += 2) {
+        const page = await pdf.getPage(i + 1);
         const content = await page.getTextContent();
-        const items = content.items.map(x => x.str.trim()).filter(x => x !== '');
-        for (let j = 0; j < items.length; j++) {
-          if (/^\d+$/.test(items[j]) && Number(items[j]) > 0 && items[j].length <= 8) {
-            const codigo = items[j];
-            let saldoStr = null;
-            for (let k = j + 1; k < Math.min(j + 25, items.length); k++) {
-              if (isSaldo(items[k])) { saldoStr = items[k]; break; }
-            }
-            if (saldoStr) {
-              const saldo = parseFloat(saldoStr.replace(/\./g, '').replace(',', '.'));
-              if (!isNaN(saldo)) saldos.push({ codigo, saldo });
-            }
-          }
-        }
+        const texto = content.items.map(x => x.str).join(' ');
+        const match = texto.match(/Legajo\s*(\d+)/i);
+        if (!match) { saltados++; continue; }
+        const leg = match[1].replace(/^0+/, '') || '0';
+        setMsg(`Procesando legajo ${leg}...`);
+        const emp = empList.find(e =>
+          e.legajo === leg ||
+          e.legajo === leg.padStart(8, '0') ||
+          (e.legajo || '').replace(/^0+/, '') === leg
+        );
+        if (!emp) { noEncontrados.push(leg); saltados++; continue; }
+
+        const pdfNuevo = await PDFDocument.create();
+        const indices = [i, i + 1].filter(x => x < totalPags);
+        const pags = await pdfNuevo.copyPages(pdfDoc, indices);
+        pags.forEach(p => pdfNuevo.addPage(p));
+        const pdfEmpBytes = await pdfNuevo.save();
+
+        const ruta = `recibos/${emp.id}/${periodo}.pdf`;
+        const uploadR = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPA_KEY}`,
+            'apikey': SUPA_KEY,
+            'Content-Type': 'application/pdf',
+            'x-upsert': 'true'
+          },
+          body: pdfEmpBytes
+        });
+
+        if (!uploadR.ok) { noEncontrados.push(leg); saltados++; continue; }
+
+        try {
+          await api.post('/admin/recibos/subir', { empleado_id: emp.id, periodo, archivo_url: ruta });
+          procesados++;
+        } catch { saltados++; }
       }
-      setMsg('Enviando ' + saldos.length + ' saldos...');
-      const r = await fetch(API + '/admin/subir-cta-cte', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ periodo, saldos })
-      });
-      const data = await r.json();
-      if (data.error) { setMsg('Error: ' + data.error); } else { setMsg('Completado'); setResultado(data); }
-    } catch (e) { setMsg('Error: ' + e.message); }
+
+      setMsg('Completado');
+      setResultado({ procesados, saltados, totalPaginas: totalPags, noEncontrados });
+    } catch (e) {
+      setMsg('Error: ' + e.message);
+    }
     setCargando(false);
   }
+
   return (
     <div style={s.card}>
-      <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de Cuenta Corriente</h3>
+      <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de recibos</h3>
       <label style={s.label}>Periodo (YYYY-MM)</label>
-      <input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-04" />
+      <input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-05" />
       <label style={s.label}>Archivo PDF</label>
       <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])} style={{ marginBottom: 12 }} />
       {pdfFile && <div style={{ fontSize: 12, color: '#1D9E75', marginBottom: 8 }}>{pdfFile.name}</div>}
       <br />
-      <button style={s.btnP} onClick={procesar} disabled={cargando}>{cargando ? 'Procesando...' : 'Procesar y subir saldos'}</button>
+      <button style={s.btnP} onClick={procesarPDF} disabled={cargando}>
+        {cargando ? 'Procesando...' : 'Procesar y subir recibos'}
+      </button>
       {msg && (
         <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, fontSize: 13,
-          background: msg.startsWith('Error') || msg.startsWith('Selec') ? '#FCEBEB' : '#E1F5EE',
-          color: msg.startsWith('Error') || msg.startsWith('Selec') ? '#A32D2D' : '#0F6E56' }}>
+          background: msg.startsWith('Error') || msg.startsWith('Selec') || msg.startsWith('Ingres') ? '#FCEBEB' : '#E1F5EE',
+          color: msg.startsWith('Error') || msg.startsWith('Selec') || msg.startsWith('Ingres') ? '#A32D2D' : '#0F6E56' }}>
           {msg}
         </div>
       )}
       {resultado && (
-        <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+        <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
           <div style={{ background: '#E1F5EE', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#0F6E56' }}>{resultado.procesados}</div>
-            <div style={{ fontSize: 12 }}>Saldos actualizados</div>
+            <div style={{ fontSize: 12 }}>Recibos subidos</div>
           </div>
           <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
             <div style={{ fontSize: 28, fontWeight: 700 }}>{resultado.saltados}</div>
             <div style={{ fontSize: 12 }}>Saltados</div>
+          </div>
+          <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{resultado.totalPaginas}</div>
+            <div style={{ fontSize: 12 }}>Paginas totales</div>
           </div>
           {resultado.noEncontrados?.length > 0 && (
             <div style={{ gridColumn: '1/-1', background: '#FAEEDA', borderRadius: 8, padding: '10px', fontSize: 12, color: '#854F0B' }}>
@@ -157,65 +142,103 @@ function CtaCteAdmin({ token, s }) {
   );
 }
 
-function BeneficiosAdmin({ token, s }) {
-  const [beneficios, setBeneficios] = useState([]);
+// ===================== EMPLEADOS =====================
+function EmpleadosAdmin() {
+  const [empleados, setEmpleados] = useState([]);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ nombre: '', comercio: '', descuento: '', descripcion: '', vencimiento: '' });
+  const [form, setForm] = useState({ nombre: '', apellido: '', legajo: '', dni: '', cargo: '', sector: '', username: '', password: '', es_admin_empresa: false });
   const [msg, setMsg] = useState('');
+
   useEffect(() => { cargar(); }, []);
+
   async function cargar() {
-    try { const r = await fetch(API + '/beneficios', { headers: { 'Authorization': 'Bearer ' + token } }); setBeneficios(await r.json()); } catch (e) { }
+    try { const r = await api.get('/admin/empleados'); setEmpleados(r.data); } catch (e) { }
   }
-  function abrirNuevo() { setEditando(null); setForm({ nombre: '', comercio: '', descuento: '', descripcion: '', vencimiento: '' }); setModal(true); }
-  function abrirEditar(b) { setEditando(b.id); setForm({ nombre: b.nombre, comercio: b.comercio, descuento: b.descuento, descripcion: b.descripcion || '', vencimiento: b.vencimiento?.slice(0, 10) || '' }); setModal(true); }
+
+  function abrirNuevo() {
+    setEditando(null);
+    setForm({ nombre: '', apellido: '', legajo: '', dni: '', cargo: '', sector: '', username: '', password: '', es_admin_empresa: false });
+    setModal(true);
+  }
+
+  function abrirEditar(e) {
+    setEditando(e.id);
+    setForm({ nombre: e.nombre, apellido: e.apellido, legajo: e.legajo || '', dni: e.dni || '', cargo: e.cargo || '', sector: e.sector || '', username: e.username || '', password: '', es_admin_empresa: e.es_admin_empresa || false });
+    setModal(true);
+  }
+
   async function guardar() {
-    if (!form.nombre || !form.comercio || !form.descuento || !form.vencimiento) { setMsg('Completa todos los campos'); return; }
+    setMsg('');
     try {
-      if (editando) { await fetch(API + '/beneficios/' + editando, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ ...form, activo: true }) }); }
-      else { await fetch(API + '/beneficios', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(form) }); }
-      setModal(false); setMsg(''); cargar();
-    } catch (e) { setMsg('Error: ' + e.message); }
+      if (editando) {
+        await api.put(`/admin/empleados/${editando}`, form);
+      } else {
+        await api.post('/admin/empleados', form);
+      }
+      setModal(false);
+      cargar();
+    } catch (e) {
+      setMsg(e.response?.data?.error || 'Error al guardar.');
+    }
   }
-  async function eliminar(id) {
-    if (!confirm('Desactivar este beneficio?')) return;
-    await fetch(API + '/beneficios/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); cargar();
-  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button style={s.btnP} onClick={abrirNuevo}>+ Agregar beneficio</button>
+        <button style={s.btnP} onClick={abrirNuevo}>+ Agregar empleado</button>
       </div>
       <div style={s.card}>
-        {beneficios.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay beneficios</p> : beneficios.map(b => (
-          <div key={b.id} style={{ padding: '12px', borderRadius: 8, border: '1px solid #e5e5e5', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{b.nombre}</div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{b.comercio}</div>
-              <div style={{ fontSize: 13, color: '#1D9E75', fontWeight: 600, marginTop: 4 }}>{b.descuento}</div>
-              {b.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{b.descripcion}</div>}
-              <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Vence: {new Date(b.vencimiento).toLocaleDateString('es-AR')}</div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => abrirEditar(b)}>Editar</button>
-              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(b.id)}>Eliminar</button>
-            </div>
-          </div>
-        ))}
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={s.th}>Legajo</th>
+            <th style={s.th}>Nombre</th>
+            <th style={s.th}>Cargo</th>
+            <th style={s.th}>Usuario</th>
+            <th style={s.th}>Admin</th>
+            <th style={s.th}>Acciones</th>
+          </tr></thead>
+          <tbody>{empleados.map(e => (
+            <tr key={e.id}>
+              <td style={s.td}>{e.legajo || '-'}</td>
+              <td style={s.td}>{e.nombre} {e.apellido}</td>
+              <td style={s.td}>{e.cargo || '-'}</td>
+              <td style={s.td}>{e.username || '-'}</td>
+              <td style={s.td}>{e.es_admin_empresa ? '✓' : '-'}</td>
+              <td style={s.td}>
+                <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditar(e)}>Editar</button>
+              </td>
+            </tr>
+          ))}</tbody>
+        </table>
       </div>
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
-            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar beneficio' : 'Nuevo beneficio'}</h3>
-            <label style={s.label}>Nombre</label><input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
-            <label style={s.label}>Comercio</label><input style={s.input} value={form.comercio} onChange={e => setForm({ ...form, comercio: e.target.value })} />
-            <label style={s.label}>Descuento</label><input style={s.input} value={form.descuento} onChange={e => setForm({ ...form, descuento: e.target.value })} />
-            <label style={s.label}>Descripcion</label><textarea style={{ ...s.input, minHeight: 60, resize: 'vertical' }} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
-            <label style={s.label}>Vencimiento</label><input type="date" style={{ ...s.input, maxWidth: 200 }} value={form.vencimiento} onChange={e => setForm({ ...form, vencimiento: e.target.value })} />
-            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
+          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 460, maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar empleado' : 'Nuevo empleado'}</h3>
+            {[
+              { k: 'nombre', label: 'Nombre *' },
+              { k: 'apellido', label: 'Apellido *' },
+              { k: 'legajo', label: 'Legajo' },
+              { k: 'dni', label: 'DNI' },
+              { k: 'cargo', label: 'Cargo' },
+              { k: 'sector', label: 'Sector' },
+              { k: 'username', label: 'Usuario *' },
+              { k: 'password', label: editando ? 'Nueva contrasena (vacio=no cambiar)' : 'Contrasena *', type: 'password' },
+            ].map(({ k, label, type = 'text' }) => (
+              <div key={k}>
+                <label style={s.label}>{label}</label>
+                <input style={s.input} type={type} value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />
+              </div>
+            ))}
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" id="es_admin" checked={form.es_admin_empresa} onChange={e => setForm({ ...form, es_admin_empresa: e.target.checked })} />
+              <label htmlFor="es_admin" style={{ fontSize: 13 }}>Es admin de empresa</label>
+            </div>
+            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginTop: 8 }}>{msg}</div>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
-              <button style={s.btn} onClick={() => { setModal(false); setMsg(''); }}>Cancelar</button>
-              <button style={s.btnP} onClick={guardar}>{editando ? 'Guardar cambios' : 'Agregar'}</button>
+              <button style={s.btn} onClick={() => setModal(false)}>Cancelar</button>
+              <button style={s.btnP} onClick={guardar}>Guardar</button>
             </div>
           </div>
         </div>
@@ -224,579 +247,169 @@ function BeneficiosAdmin({ token, s }) {
   );
 }
 
-function FirmasAdmin({ token, s }) {
-  const [recibos, setRecibos] = React.useState([]);
-  const [periodo, setPeriodo] = React.useState('');
-  const [cargando, setCargando] = React.useState(false);
-  React.useEffect(() => { const d = new Date(); d.setMonth(d.getMonth()-1); setPeriodo(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }, []);
-  async function cargar() {
-    setCargando(true);
-    try {
-      const r = await fetch(`${API}/admin/recibos?periodo=${periodo}`, { headers: { 'Authorization': 'Bearer ' + token } });
-      setRecibos(await r.json());
-    } catch(e) {} finally { setCargando(false); }
-  }
-  const firmados = recibos.filter(r => r.firmado_en).length;
-  const pendientes = recibos.filter(r => !r.firmado_en).length;
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 12, marginBottom: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <div><label style={s.label}>Periodo (YYYY-MM)</label><input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-04" /></div>
-        <button style={s.btnP} onClick={cargar} disabled={cargando}>{cargando ? 'Cargando...' : 'Consultar'}</button>
-      </div>
-      {recibos.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: '1rem' }}>
-          <div style={{ background: '#E1F5EE', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#0F6E56' }}>{firmados}</div><div style={{ fontSize: 12 }}>Firmados</div></div>
-          <div style={{ background: '#FAEEDA', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#854F0B' }}>{pendientes}</div><div style={{ fontSize: 12 }}>Pendientes</div></div>
-        </div>
-      )}
-      {recibos.length > 0 && (
-        <div style={s.card}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr>
-              {['Empleado','Legajo','Estado','Fecha firma'].map(h => <th key={h} style={s.th}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {recibos.map((r,i) => (
-                <tr key={i}>
-                  <td style={s.td}>{r.nombre_completo}</td>
-                  <td style={s.td}>{r.legajo}</td>
-                  <td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: r.firmado_en ? '#E1F5EE' : '#FAEEDA', color: r.firmado_en ? '#0F6E56' : '#854F0B' }}>{r.firmado_en ? 'Firmado' : 'Pendiente'}</span></td>
-                  <td style={s.td}>{r.firmado_en ? new Date(r.firmado_en).toLocaleDateString('es-AR') : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FichajesAdmin({ token, s }) {
+// ===================== FICHAJES =====================
+function FichajesAdmin() {
   const [fichajes, setFichajes] = useState([]);
   const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10));
   const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
-  useEffect(() => { cargar(); }, [desde, hasta]);
+
   async function cargar() {
     try {
-      const r = await fetch(`${API}/fichajes/admin?desde=${desde}&hasta=${hasta}`, { headers: { 'Authorization': 'Bearer ' + token } });
-      const data = await r.json();
-      setFichajes(Array.isArray(data) ? data : []);
-    } catch (e) { setFichajes([]); }
+      const r = await api.get('/admin/fichajes', { params: { desde, hasta } });
+      setFichajes(r.data);
+    } catch (e) { }
   }
-  function calcDuracion(entrada, salida) {
-    if (!entrada || !salida) return '-';
-    const mins = Math.round((new Date(salida) - new Date(entrada)) / 60000);
-    if (mins <= 0) return '-';
-    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-  }
-  async function exportarExcel() {
-    const XLSX = await import('xlsx');
-    const filas = fichajes.map(f => ({ Empleado: f.nombre_completo || '', Legajo: f.legajo || '', Fecha: f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '', Entrada: f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '', Salida: f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '', Duracion: calcDuracion(f.entrada, f.salida), Estado: f.estado || '', Sucursal: f.sucursal || '' }));
-    const ws = XLSX.utils.json_to_sheet(filas);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Fichajes');
-    XLSX.writeFile(wb, `fichajes_${desde}_${hasta}.xlsx`);
-  }
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 16, marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div><label style={{ fontSize: 12, color: '#555', display: 'block', marginBottom: 4 }}>Desde</label><input type="date" style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8 }} value={desde} onChange={e => setDesde(e.target.value)} /></div>
-        <div><label style={{ fontSize: 12, color: '#555', display: 'block', marginBottom: 4 }}>Hasta</label><input type="date" style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8 }} value={hasta} onChange={e => setHasta(e.target.value)} /></div>
-        <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13, marginBottom: 8 }} onClick={exportarExcel} disabled={fichajes.length === 0}>Exportar Excel</button>
-      </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr>
-          {['Empleado','Legajo','Fecha','Entrada','Salida','Duracion','Estado','Sucursal'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>
-          ))}
-        </tr></thead>
-        <tbody>
-          {fichajes.length === 0
-            ? <tr><td colSpan={8} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin fichajes</td></tr>
-            : fichajes.map((f, i) => (
-              <tr key={i}>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.nombre_completo || '-'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.legajo || '-'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleDateString('es-AR') : '-'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.entrada ? new Date(f.entrada).toLocaleTimeString('es-AR') : '-'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{f.salida ? new Date(f.salida).toLocaleTimeString('es-AR') : '-'}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{calcDuracion(f.entrada, f.salida)}</td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: f.estado === 'activo' ? '#E1F5EE' : '#f0f0f0', color: f.estado === 'activo' ? '#0F6E56' : '#555' }}>{f.estado}</span>
-                </td>
-                <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 12, color: '#555' }}>{f.sucursal || 'â€”'}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
-function AvisosAdmin({ token, s }) {
-  const [avisos, setAvisos] = useState([]);
-  const [titulo, setTitulo] = useState('');
-  const [contenido, setContenido] = useState('');
-  const [importante, setImportante] = useState(false);
-  const [adjunto, setAdjunto] = useState(null);
-  const [msg, setMsg] = useState('');
-  const [cargando, setCargando] = useState(false);
-  useEffect(() => { cargarAvisos(); }, []);
-  async function cargarAvisos() {
-    try { const r = await fetch(API + '/avisos', { headers: { 'Authorization': 'Bearer ' + token } }); setAvisos(await r.json()); } catch (e) { }
-  }
-  async function publicar() {
-    if (!titulo || !contenido) { setMsg('Completa titulo y contenido'); return; }
-    setCargando(true);
-    try {
-      let url_adjunto = null, tipo_adjunto = null;
-      if (adjunto) {
-        const ext = adjunto.name.split('.').pop();
-        const ruta = `avisos/${Date.now()}.${ext}`;
-        const up = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'apikey': SUPA_KEY, 'Content-Type': adjunto.type, 'x-upsert': 'true' }, body: adjunto });
-        if (up.ok) { url_adjunto = ruta; tipo_adjunto = adjunto.type.startsWith('image') ? 'imagen' : 'pdf'; }
-      }
-      const r = await fetch(API + '/avisos', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ titulo, contenido, importante, url_adjunto, tipo_adjunto }) });
-      const data = await r.json();
-      if (data.error) { setMsg('Error: ' + data.error); } else { setMsg('Aviso publicado'); setTitulo(''); setContenido(''); setAdjunto(null); setImportante(false); cargarAvisos(); }
-    } catch (e) { setMsg('Error: ' + e.message); }
-    setCargando(false);
-  }
-  async function eliminar(id) {
-    if (!confirm('Desactivar?')) return;
-    await fetch(API + '/avisos/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); cargarAvisos();
-  }
+  useEffect(() => { cargar(); }, []);
+
   return (
     <div>
-      <div style={s.card}>
-        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Publicar nuevo aviso</h3>
-        <label style={s.label}>Titulo</label><input style={s.input} value={titulo} onChange={e => setTitulo(e.target.value)} />
-        <label style={s.label}>Contenido</label><textarea style={{ ...s.input, minHeight: 80, resize: 'vertical' }} value={contenido} onChange={e => setContenido(e.target.value)} />
-        <label style={s.label}>Adjunto (PDF o imagen)</label><input type="file" accept=".pdf,image/*" onChange={e => setAdjunto(e.target.files[0])} style={{ marginBottom: 8 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}><input type="checkbox" checked={importante} onChange={e => setImportante(e.target.checked)} /><label style={{ fontSize: 13 }}>Marcar como importante</label></div>
-        <button style={s.btnP} onClick={publicar} disabled={cargando}>{cargando ? 'Publicando...' : 'Publicar aviso'}</button>
-        {msg && <div style={{ marginTop: 8, fontSize: 13, color: msg.startsWith('Error') ? '#A32D2D' : '#0F6E56' }}>{msg}</div>}
+      <div style={{ display: 'flex', gap: 12, marginBottom: '1rem', alignItems: 'flex-end' }}>
+        <div>
+          <label style={s.label}>Desde</label>
+          <input type="date" style={{ ...s.input, maxWidth: 160 }} value={desde} onChange={e => setDesde(e.target.value)} />
+        </div>
+        <div>
+          <label style={s.label}>Hasta</label>
+          <input type="date" style={{ ...s.input, maxWidth: 160 }} value={hasta} onChange={e => setHasta(e.target.value)} />
+        </div>
+        <button style={s.btnP} onClick={cargar}>Buscar</button>
       </div>
       <div style={s.card}>
-        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Avisos activos</h3>
-        {avisos.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay avisos</p> : avisos.map(a => (
-          <div key={a.id} style={{ padding: '12px', borderRadius: 8, border: `1px solid ${a.importante ? '#F5A623' : '#e5e5e5'}`, background: a.importante ? '#FFFBF0' : '#fff', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-            <div><div style={{ fontWeight: 600, fontSize: 14 }}>{a.importante && 'âš ï¸ '}{a.titulo}</div><div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{a.contenido}</div></div>
-            <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(a.id)}>Eliminar</button>
-          </div>
-        ))}
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={s.th}>Empleado</th>
+            <th style={s.th}>Legajo</th>
+            <th style={s.th}>Tipo</th>
+            <th style={s.th}>Fecha/Hora</th>
+          </tr></thead>
+          <tbody>{fichajes.map(f => (
+            <tr key={f.id}>
+              <td style={s.td}>{f.nombre} {f.apellido}</td>
+              <td style={s.td}>{f.legajo || '-'}</td>
+              <td style={s.td}>
+                <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  background: f.tipo === 'entrada' ? '#E1F5EE' : '#FCEBEB',
+                  color: f.tipo === 'entrada' ? '#0F6E56' : '#A32D2D' }}>
+                  {f.tipo}
+                </span>
+              </td>
+              <td style={s.td}>{new Date(f.created_at).toLocaleString('es-AR')}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        {fichajes.length === 0 && <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: 20 }}>No hay fichajes en ese periodo</p>}
       </div>
     </div>
   );
 }
 
-
-function CapacitacionesAdmin({ token, s }) {
-  const [capacitaciones, setCapacitaciones] = useState([]);
-  const [asignaciones, setAsignaciones] = useState([]);
-  const [empleados, setEmpleados] = useState([]);
-  const [modalNueva, setModalNueva] = useState(false);
-  const [modalAsignar, setModalAsignar] = useState(null);
-  const [form, setForm] = useState({ nombre: '', descripcion: '', fecha_limite: '' });
-  const [seleccionados, setSeleccionados] = useState([]);
-  const [msg, setMsg] = useState('');
-  const [filtro, setFiltro] = useState('');
+// ===================== SOLICITUDES =====================
+function SolicitudesAdmin() {
+  const [solicitudes, setSolicitudes] = useState([]);
 
   useEffect(() => { cargar(); }, []);
 
   async function cargar() {
+    try { const r = await api.get('/admin/solicitudes'); setSolicitudes(r.data); } catch (e) { }
+  }
+
+  async function responder(id, estado) {
     try {
-      const [rc, ra, re] = await Promise.all([
-        fetch(API + '/capacitaciones', { headers: { 'Authorization': 'Bearer ' + token } }),
-        fetch(API + '/capacitaciones/admin', { headers: { 'Authorization': 'Bearer ' + token } }),
-        fetch(API + '/admin/empleados', { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } }),
-      ]);
-      setCapacitaciones(await rc.json());
-      setAsignaciones(await ra.json());
-      setEmpleados(await re.json());
+      await api.put(`/admin/solicitudes/${id}`, { estado });
+      cargar();
     } catch (e) { }
   }
 
-  async function crearCapacitacion() {
-    if (!form.nombre) { setMsg('Completa el nombre'); return; }
-    try {
-      await fetch(API + '/capacitaciones', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(form) });
-      setModalNueva(false); setForm({ nombre: '', descripcion: '', fecha_limite: '' }); setMsg(''); cargar();
-    } catch (e) { setMsg('Error: ' + e.message); }
-  }
-
-  async function asignar() {
-    if (!seleccionados.length) { setMsg('Selecciona al menos un empleado'); return; }
-    try {
-      await fetch(API + '/capacitaciones/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ capacitacion_id: modalAsignar.id, empleado_ids: seleccionados }) });
-      setModalAsignar(null); setSeleccionados([]); setMsg(''); cargar();
-    } catch (e) { setMsg('Error: ' + e.message); }
-  }
-
-  async function completar(id) {
-    await fetch(API + '/capacitaciones/completar/' + id, { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } });
-    cargar();
-  }
-
-  async function eliminar(id) {
-    if (!confirm('Eliminar esta capacitacion?')) return;
-    await fetch(API + '/capacitaciones/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-    cargar();
-  }
-
-  const asignacionesFiltradas = filtro
-    ? asignaciones.filter(a => a.nombre.toLowerCase().includes(filtro.toLowerCase()) || a.nombre_completo.toLowerCase().includes(filtro.toLowerCase()))
-    : asignaciones;
-
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button style={s.btnP} onClick={() => setModalNueva(true)}>+ Nueva capacitacion</button>
-      </div>
-
-      <div style={s.card}>
-        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Capacitaciones disponibles</h3>
-        {capacitaciones.length === 0 ? <p style={{ fontSize: 13, color: '#888' }}>No hay capacitaciones</p> : capacitaciones.map(c => (
-          <div key={c.id} style={{ padding: '12px', borderRadius: 8, border: '1px solid #e5e5e5', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{c.nombre}</div>
-              {c.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>{c.descripcion}</div>}
-              {c.fecha_limite && <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>Fecha lÃ­mite: {new Date(c.fecha_limite).toLocaleDateString('es-AR')}</div>}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11 }} onClick={() => { setModalAsignar(c); setSeleccionados([]); }}>Asignar</button>
-              <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#A32D2D' }} onClick={() => eliminar(c.id)}>Eliminar</button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={s.card}>
-        <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Asignaciones</h3>
-        <input style={{ ...s.input, maxWidth: 300, marginBottom: 12 }} placeholder="Buscar por capacitacion o empleado..." value={filtro} onChange={e => setFiltro(e.target.value)} />
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>
-            {['Empleado','Legajo','Capacitacion','Fecha limite','Estado','Acciones'].map(h => (
-              <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' }}>{h}</th>
-            ))}
-          </tr></thead>
-          <tbody>
-            {asignacionesFiltradas.length === 0
-              ? <tr><td colSpan={6} style={{ padding: '10px', textAlign: 'center', color: '#888' }}>Sin asignaciones</td></tr>
-              : asignacionesFiltradas.map((a, i) => (
-                <tr key={i}>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.nombre_completo}</td>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.legajo}</td>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.nombre}</td>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>{a.fecha_limite ? new Date(a.fecha_limite).toLocaleDateString('es-AR') : '-'}</td>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: a.completado ? '#E1F5EE' : '#FAEEDA', color: a.completado ? '#0F6E56' : '#854F0B' }}>
-                      {a.completado ? 'Completada' : 'Pendiente'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 }}>
-                    {!a.completado && <button style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#0F6E56' }} onClick={() => completar(a.id)}>Marcar completada</button>}
-                    {a.completado && <span style={{ fontSize: 11, color: '#aaa' }}>{a.fecha_completado ? new Date(a.fecha_completado).toLocaleDateString('es-AR') : ''}</span>}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-
-      {modalNueva && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 440, maxWidth: '95vw' }}>
-            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Nueva capacitacion</h3>
-            <label style={s.label}>Nombre</label><input style={s.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Seguridad e Higiene" />
-            <label style={s.label}>Descripcion</label><textarea style={{ ...s.input, minHeight: 60, resize: 'vertical' }} value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
-            <label style={s.label}>Fecha limite</label><input type="date" style={{ ...s.input, maxWidth: 200 }} value={form.fecha_limite} onChange={e => setForm({ ...form, fecha_limite: e.target.value })} />
-            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
-              <button style={s.btn} onClick={() => { setModalNueva(false); setMsg(''); }}>Cancelar</button>
-              <button style={s.btnP} onClick={crearCapacitacion}>Crear</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {modalAsignar && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 480, maxWidth: '95vw', maxHeight: '80vh', overflow: 'auto' }}>
-            <h3 style={{ fontSize: 15, marginBottom: '0.5rem' }}>Asignar: {modalAsignar.nombre}</h3>
-            <p style={{ fontSize: 12, color: '#888', marginBottom: '1rem' }}>Selecciona los empleados</p>
-            <div style={{ marginBottom: 12 }}>
-              {Array.isArray(empleados) && empleados.map(e => (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <input type="checkbox" checked={seleccionados.includes(e.id)} onChange={ev => setSeleccionados(ev.target.checked ? [...seleccionados, e.id] : seleccionados.filter(x => x !== e.id))} />
-                  <span style={{ fontSize: 13 }}>{e.nombre_completo}</span>
-                  <span style={{ fontSize: 11, color: '#aaa' }}>{e.legajo}</span>
+    <div style={s.card}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr>
+          <th style={s.th}>Empleado</th>
+          <th style={s.th}>Tipo</th>
+          <th style={s.th}>Desde</th>
+          <th style={s.th}>Hasta</th>
+          <th style={s.th}>Estado</th>
+          <th style={s.th}>Acciones</th>
+        </tr></thead>
+        <tbody>{solicitudes.map(s2 => (
+          <tr key={s2.id}>
+            <td style={s.td}>{s2.nombre} {s2.apellido}</td>
+            <td style={s.td}>{s2.tipo}</td>
+            <td style={s.td}>{s2.fecha_inicio || '-'}</td>
+            <td style={s.td}>{s2.fecha_fin || '-'}</td>
+            <td style={s.td}>
+              <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11,
+                background: s2.estado === 'aprobada' ? '#E1F5EE' : s2.estado === 'rechazada' ? '#FCEBEB' : '#FAEEDA',
+                color: s2.estado === 'aprobada' ? '#0F6E56' : s2.estado === 'rechazada' ? '#A32D2D' : '#854F0B' }}>
+                {s2.estado}
+              </span>
+            </td>
+            <td style={s.td}>
+              {s2.estado === 'pendiente' && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px', color: '#0F6E56' }} onClick={() => responder(s2.id, 'aprobada')}>Aprobar</button>
+                  <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px', color: '#A32D2D' }} onClick={() => responder(s2.id, 'rechazada')}>Rechazar</button>
                 </div>
-              ))}
-            </div>
-            {msg && <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 8 }}>{msg}</div>}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button style={s.btn} onClick={() => { setModalAsignar(null); setMsg(''); }}>Cancelar</button>
-              <button style={s.btnP} onClick={asignar}>Asignar ({seleccionados.length})</button>
-            </div>
-          </div>
-        </div>
-      )}
+              )}
+            </td>
+          </tr>
+        ))}</tbody>
+      </table>
+      {solicitudes.length === 0 && <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: 20 }}>No hay solicitudes</p>}
     </div>
   );
 }
+
+// ===================== PANEL PRINCIPAL =====================
+const TABS = [
+  { key: 'recibos', label: 'Recibos' },
+  { key: 'empleados', label: 'Empleados' },
+  { key: 'fichajes', label: 'Fichajes' },
+  { key: 'solicitudes', label: 'Solicitudes' },
+];
 
 export default function Admin() {
-  const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
-  const [logueado, setLogueado] = useState(!!localStorage.getItem('admin_token'));
-  const [legajo, setLegajo] = useState('001');
-  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const { empleado, logout } = useAuthStore();
   const [tab, setTab] = useState('recibos');
-  const [periodo, setPeriodo] = useState('');
-  const [pdfFile, setPdfFile] = useState(null);
-  const [msg, setMsg] = useState('');
-  const [empleados, setEmpleados] = useState([]);
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [resultado, setResultado] = useState(null);
-  const [cargando, setCargando] = useState(false);
-  const [modalEmp, setModalEmp] = useState(false);
-  const [editandoEmp, setEditandoEmp] = useState(null);
-  const [empForm, setEmpForm] = useState({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' });
-  useEffect(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }, []);
-  useEffect(() => { if (!logueado) return; if (tab === 'empleados') cargarEmpleados(); if (tab === 'solicitudes') cargarSolicitudes(); }, [tab, logueado]);
-  const H = () => ({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token });
-  async function login() {
-    try {
-      const r = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ legajo, password }) });
-      const d = await r.json(); const t = d.token || d.accessToken;
-      if (t) { setToken(t); setLogueado(true); localStorage.setItem('admin_token', t); } else alert('Legajo o contrasena incorrectos');
-    } catch (e) { alert('Error: ' + e.message); }
+
+  useEffect(() => {
+    if (!empleado) { navigate('/login'); return; }
+    if (!empleado?.es_admin) { navigate('/'); }
+  }, []);
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
   }
-  async function cargarEmpleados() { try { const r = await fetch(API + '/admin/empleados', { headers: H() }); setEmpleados(await r.json()); } catch (e) { } }
-  async function cargarSolicitudes() { try { const r = await fetch(API + '/admin/solicitudes', { headers: H() }); setSolicitudes(await r.json()); } catch (e) { } }
-  function abrirNuevoEmp() {
-    setEditandoEmp(null);
-    setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' });
-    setModalEmp(true);
-  }
-  function abrirEditarEmp(e) {
-    setEditandoEmp(e.id);
-    setEmpForm({ legajo: e.legajo || '', nombre_completo: e.nombre_completo || '', cargo: e.cargo || '', area: e.area || '', manager_codigo: e.manager_codigo || '', codigo_cliente: e.codigo_cliente || '', password: '' });
-    setModalEmp(true);
-  }
-  async function procesarPDF() {
-    if (!pdfFile) { setMsg('Selecciona el PDF primero'); return; }
-    if (!periodo) { setMsg('Escribi el periodo'); return; }
-    setCargando(true); setMsg('Leyendo PDF...');
-    try {
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
-      const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdfBytes = new Uint8Array(arrayBuffer);
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      const totalPags = pdfDoc.getPageCount();
-      setMsg('Leyendo legajos... (' + totalPags + ' paginas)');
-      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
-      const pdf = await loadingTask.promise;
-      const empR = await fetch(API + '/admin/empleados', { headers: H() });
-      const empList = await empR.json();
-      let procesados = 0, saltados = 0, noEncontrados = [];
-      for (let i = 0; i < totalPags; i += 2) {
-        const page = await pdf.getPage(i + 1);
-        const content = await page.getTextContent();
-        const texto = content.items.map(x => x.str).join(' ');
-        const match = texto.match(/Legajo\s*(\d+)/i);
-        if (!match) { saltados++; continue; }
-        const leg = match[1].replace(/^0+/, '') || '0';
-        setMsg('Procesando legajo ' + leg + '...');
-        const emp = Array.isArray(empList) && empList.find(e => e.legajo === leg || e.legajo === leg.padStart(8, '0') || e.legajo.replace(/^0+/, '') === leg);
-        if (!emp) { noEncontrados.push(leg); saltados++; continue; }
-        const pdfNuevo = await PDFDocument.create();
-        const indices = [i, i + 1].filter(x => x < totalPags);
-        const pags = await pdfNuevo.copyPages(pdfDoc, indices);
-        pags.forEach(p => pdfNuevo.addPage(p));
-        const pdfEmpBytes = await pdfNuevo.save();
-        const ruta = `recibos/${emp.id}/${periodo}.pdf`;
-        const uploadR = await fetch(`${SUPA_URL}/storage/v1/object/${ruta}`, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPA_KEY}`, 'apikey': SUPA_KEY, 'Content-Type': 'application/pdf', 'x-upsert': 'true' }, body: pdfEmpBytes });
-        if (!uploadR.ok) { noEncontrados.push(leg); saltados++; continue; }
-        const regR = await fetch(API + '/admin/registrar-recibo', { method: 'POST', headers: H(), body: JSON.stringify({ empleado_id: emp.id, periodo, url_archivo: ruta }) });
-        const regData = await regR.json();
-        if (regData.error) { saltados++; } else procesados++;
-      }
-      setMsg('Completado'); setResultado({ procesados, saltados, totalPaginas: totalPags, noEncontrados });
-    } catch (e) { setMsg('Error: ' + e.message); }
-    setCargando(false);
-  }
-  async function guardarEmpleado() {
-    try {
-      const url = editandoEmp ? API + '/admin/empleados/' + editandoEmp : API + '/admin/empleados';
-      const method = editandoEmp ? 'PUT' : 'POST';
-      const r = await fetch(url, { method, headers: H(), body: JSON.stringify(empForm) });
-      const data = await r.json();
-      if (data.error) { alert(data.error); return; }
-      alert('Empleado guardado'); setModalEmp(false); setEditandoEmp(null);
-      setEmpForm({ legajo: '', nombre_completo: '', cargo: '', area: '', manager_codigo: '', codigo_cliente: '', password: '' }); cargarEmpleados();
-    } catch (e) { alert(e.message); }
-  }
-  async function eliminarEmp(id) {
-    if (!confirm('Desactivar este empleado?')) return;
-    try {
-      await fetch(API + '/admin/empleados/' + id, { method: 'DELETE', headers: H() });
-      cargarEmpleados();
-    } catch (e) { alert(e.message); }
-  }
-  async function desbloquearEmp(id) {
-    try {
-      await fetch(API + '/admin/empleados/' + id + '/desbloquear', { method: 'PUT', headers: H() });
-      alert('Empleado desbloqueado');
-    } catch (e) { alert(e.message); }
-  }
-  async function responder(id, estado) {
-    const respuesta = prompt('Comentario:') || '';
-    try { await fetch(API + '/admin/solicitudes/' + id, { method: 'PUT', headers: H(), body: JSON.stringify({ estado, respuesta }) }); cargarSolicitudes(); } catch (e) { }
-  }
-  const s = {
-    wrap: { fontFamily: 'system-ui,sans-serif', maxWidth: 1000, margin: '0 auto', padding: '1rem' },
-    tabs: { display: 'flex', borderBottom: '1px solid #e5e5e5', marginBottom: '1.5rem', flexWrap: 'wrap' },
-    tab: (a) => ({ padding: '10px 18px', cursor: 'pointer', borderBottom: a ? '2px solid #1D9E75' : '2px solid transparent', color: a ? '#1D9E75' : '#666', fontWeight: a ? 600 : 400, fontSize: 14 }),
-    card: { background: '#fff', border: '1px solid #e5e5e5', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' },
-    btn: { padding: '8px 16px', borderRadius: 8, border: '1px solid #ddd', background: 'transparent', cursor: 'pointer', fontSize: 13 },
-    btnP: { padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1D9E75', color: '#fff', cursor: 'pointer', fontSize: 13 },
-    input: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, marginBottom: 8, boxSizing: 'border-box' },
-    label: { fontSize: 12, color: '#555', display: 'block', marginBottom: 4 },
-    th: { textAlign: 'left', padding: '8px 10px', fontSize: 11, color: '#888', textTransform: 'uppercase', borderBottom: '1px solid #e5e5e5' },
-    td: { padding: '10px', borderBottom: '1px solid #f0f0f0', fontSize: 13 },
-  };
-  if (!logueado) return (
-    <div style={{ maxWidth: 340, margin: '80px auto', padding: '2rem', border: '1px solid #e5e5e5', borderRadius: 12, fontFamily: 'system-ui' }}>
-      <h2 style={{ fontSize: 18, marginBottom: '1.5rem' }}>Panel Admin</h2>
-      <label style={s.label}>Legajo</label><input style={s.input} value={legajo} onChange={e => setLegajo(e.target.value)} />
-      <label style={s.label}>Contrasena</label><input type="password" style={s.input} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && login()} />
-      <button onClick={login} style={{ width: '100%', padding: '10px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}>Ingresar</button>
-    </div>
-  );
+
   return (
-    <div style={s.wrap}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600 }}>Panel Admin</h1>
-        <button style={s.btn} onClick={() => { setLogueado(false); localStorage.removeItem('admin_token'); }}>Salir</button>
-      </div>
-      <div style={s.tabs}>
-        {['recibos','cta-cte','empleados','solicitudes','fichajes','firmas','avisos','beneficios','ubicaciones','capacitaciones'].map(t => (
-          <div key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'recibos' ? 'Recibos' : t === 'cta-cte' ? 'Cta. Cte.' : t === 'empleados' ? 'Empleados' : t === 'solicitudes' ? 'Solicitudes' : t === 'fichajes' ? 'Fichajes' : t === 'avisos' ? 'Cartelera' : t === 'beneficios' ? 'Beneficios' : t === 'ubicaciones' ? 'Ubicaciones' : t === 'firmas' ? 'Firmas' : 'Capacitaciones'}
-          </div>
-        ))}
-      </div>
-      {tab === 'recibos' && (
-        <div style={s.card}>
-          <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Subir PDF de recibos</h3>
-          <label style={s.label}>Periodo (YYYY-MM)</label><input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-03" />
-          <label style={s.label}>Archivo PDF</label><input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])} style={{ marginBottom: 12 }} />
-          {pdfFile && <div style={{ fontSize: 12, color: '#1D9E75', marginBottom: 8 }}>{pdfFile.name}</div>}
-          <br /><button style={s.btnP} onClick={procesarPDF} disabled={cargando}>{cargando ? 'Procesando...' : 'Procesar y subir recibos'}</button>
-          {msg && <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: msg.startsWith('Error') || msg.startsWith('Selec') || msg.startsWith('Escri') ? '#FCEBEB' : '#E1F5EE', color: msg.startsWith('Error') || msg.startsWith('Selec') || msg.startsWith('Escri') ? '#A32D2D' : '#0F6E56', fontSize: 13 }}>{msg}</div>}
-          {resultado && (
-            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-              <div style={{ background: '#E1F5EE', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#0F6E56' }}>{resultado.procesados}</div><div style={{ fontSize: 12 }}>Recibos subidos</div></div>
-              <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700 }}>{resultado.saltados}</div><div style={{ fontSize: 12 }}>Saltados</div></div>
-              <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700 }}>{resultado.totalPaginas}</div><div style={{ fontSize: 12 }}>Paginas totales</div></div>
-              {resultado.noEncontrados?.length > 0 && <div style={{ gridColumn: '1/-1', background: '#FAEEDA', borderRadius: 8, padding: '10px', fontSize: 12, color: '#854F0B' }}>No encontrados: {resultado.noEncontrados.join(', ')}</div>}
-            </div>
-          )}
-        </div>
-      )}
-      {tab === 'cta-cte' && <CtaCteAdmin token={token} s={s} />}
-      {tab === 'empleados' && (
+    <div style={{ minHeight: '100dvh', background: '#f9f9f9', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e5e5', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-            <button style={s.btnP} onClick={abrirNuevoEmp}>+ Agregar empleado</button>
-          </div>
-          <div style={s.card}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr>
-                <th style={s.th}>Legajo</th>
-                <th style={s.th}>Nombre</th>
-                <th style={s.th}>Cargo</th>
-                <th style={s.th}>Area</th>
-                <th style={s.th}>Cod. Cliente</th>
-                <th style={s.th}>Acciones</th>
-              </tr></thead>
-              <tbody>{Array.isArray(empleados) && empleados.map(e => (
-                <tr key={e.id}>
-                  <td style={s.td}>{e.legajo}</td>
-                  <td style={s.td}>{e.nombre_completo}</td>
-                  <td style={s.td}>{e.cargo || '-'}</td>
-                  <td style={s.td}>{e.area || '-'}</td>
-                  <td style={s.td}>{e.codigo_cliente || '-'}</td>
-                  <td style={s.td}>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditarEmp(e)}>Editar</button>
-                      <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px', color: '#1D9E75' }} onClick={() => desbloquearEmp(e.id)}>Desbloquear</button>
-                      <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px', color: '#A32D2D' }} onClick={() => eliminarEmp(e.id)}>Eliminar</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-          {modalEmp && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-              <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 420, maxWidth: '95vw' }}>
-                <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editandoEmp ? 'Editar empleado' : 'Agregar empleado'}</h3>
-                {[
-                  { k: 'legajo', label: 'Legajo' },
-                  { k: 'nombre_completo', label: 'Nombre' },
-                  { k: 'cargo', label: 'Cargo' },
-                  { k: 'area', label: 'Area' },
-                  { k: 'manager_codigo', label: 'Cod. Manager' },
-                  { k: 'codigo_cliente', label: 'Cod. Cliente (cta cte)' },
-                  { k: 'password', label: editandoEmp ? 'Nueva contrasena (dejar vacio para no cambiar)' : 'Contrasena' },
-                ].map(({ k, label }) => (
-                  <div key={k}>
-                    <label style={s.label}>{label}</label>
-                    <input
-                      style={s.input}
-                      type={k === 'password' ? 'password' : 'text'}
-                      value={empForm[k]}
-                      onChange={e => setEmpForm({ ...empForm, [k]: e.target.value })}
-                    />
-                  </div>
-                ))}
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
-                  <button style={s.btn} onClick={() => { setModalEmp(false); setEditandoEmp(null); }}>Cancelar</button>
-                  <button style={s.btnP} onClick={guardarEmpleado}>Guardar</button>
-                </div>
-              </div>
-            </div>
-          )}
+          <span style={{ fontWeight: 700, fontSize: 16 }}>Panel Admin</span>
+          <span style={{ fontSize: 13, color: '#888', marginLeft: 10 }}>{empleado?.nombre} {empleado?.apellido}</span>
         </div>
-      )}
-      {tab === 'solicitudes' && (
-        <div style={s.card}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr><th style={s.th}>Empleado</th><th style={s.th}>Tipo</th><th style={s.th}>Fecha</th><th style={s.th}>Descripcion</th><th style={s.th}>Estado</th><th style={s.th}>Acciones</th></tr></thead>
-            <tbody>{Array.isArray(solicitudes) && solicitudes.map(s2 => (
-              <tr key={s2.id}>
-                <td style={s.td}>{s2.nombre_completo}</td><td style={s.td}>{s2.tipo}</td><td style={s.td}>{s2.fecha_solicitada?.slice(0, 10) || '-'}</td>
-                <td style={s.td}>{s2.descripcion || '-'}{s2.url_adjunto && <a href={s2.url_adjunto} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#1D9E75', display: 'block', marginTop: 2 }}>Ver adjunto</a>}</td>
-                <td style={s.td}><span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, background: s2.estado === 'aprobado' ? '#E1F5EE' : s2.estado === 'rechazado' ? '#FCEBEB' : '#FAEEDA', color: s2.estado === 'aprobado' ? '#0F6E56' : s2.estado === 'rechazado' ? '#A32D2D' : '#854F0B' }}>{s2.estado}</span></td>
-                <td style={s.td}><button style={{ ...s.btn, marginRight: 4, fontSize: 11, padding: '3px 8px' }} onClick={() => responder(s2.id, 'aprobado')}>Aprobar</button><button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => responder(s2.id, 'rechazado')}>Rechazar</button></td>
-              </tr>
-            ))}</tbody>
-          </table>
+        <button style={{ ...s.btn, color: '#A32D2D' }} onClick={handleLogout}>Salir</button>
+      </div>
+      <div style={{ padding: '24px', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #e5e5e5' }}>
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ padding: '10px 20px', borderRadius: '8px 8px 0 0', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === t.key ? 600 : 400,
+                background: tab === t.key ? '#fff' : 'transparent',
+                borderBottom: tab === t.key ? '2px solid #1D9E75' : '2px solid transparent',
+                color: tab === t.key ? '#1D9E75' : '#555' }}>
+              {t.label}
+            </button>
+          ))}
         </div>
-      )}
-      {tab === 'fichajes' && <div style={s.card}><h3 style={{ fontSize: 15, marginBottom: '1rem' }}>Control de fichajes</h3><FichajesAdmin token={token} s={s} /></div>}
-      {tab === 'avisos' && <AvisosAdmin token={token} s={s} />}
-      {tab === 'beneficios' && <BeneficiosAdmin token={token} s={s} />}
-      {tab === 'ubicaciones' && <UbicacionesAdmin token={token} s={s} />}
-      {tab === 'firmas' && <FirmasAdmin token={token} s={s} />}
-      {tab === 'capacitaciones' && <CapacitacionesAdmin token={token} s={s} />}
+        {tab === 'recibos' && <RecibosAdmin />}
+        {tab === 'empleados' && <EmpleadosAdmin />}
+        {tab === 'fichajes' && <FichajesAdmin />}
+        {tab === 'solicitudes' && <SolicitudesAdmin />}
+      </div>
     </div>
   );
 }
-
-

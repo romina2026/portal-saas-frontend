@@ -7,7 +7,7 @@ export default function Fichaje() {
   const [semana, setSemana]   = useState([]);
   const [loading, setLoading] = useState(false);
   const [hora, setHora]       = useState(new Date());
-  const [msg, setMsg]         = useState(null); // { tipo: 'ok'|'error', texto }
+  const [msg, setMsg]         = useState(null);
 
   useEffect(() => {
     fichajesApi.estadoHoy().then(r => setEstado(r.data)).catch(() => {});
@@ -28,9 +28,9 @@ export default function Fichaje() {
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
       } catch {
-        setMsg({ tipo: 'error', texto: 'No se pudo obtener tu ubicación. Activá el GPS e intentá de nuevo.' });
-        setLoading(false);
-        return;
+        // Sin GPS, ficha sin coordenadas
+        lat = null;
+        lng = null;
       }
 
       if (estado?.activo) {
@@ -89,14 +89,14 @@ export default function Fichaje() {
 
         <p className="section-title">Esta semana</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {semana.map((f) => (
-            <div key={f.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {semana.map((f, i) => (
+            <div key={i} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <p style={{ fontWeight: 500, fontSize: 14 }}>
-                  {new Date(f.entrada).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' })}
+                  {new Date(f.fecha).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' })}
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  {new Date(f.entrada).toTimeString().slice(0, 5)}
+                  {f.entrada ? new Date(f.entrada).toTimeString().slice(0, 5) : '--:--'}
                   {f.salida ? ` – ${new Date(f.salida).toTimeString().slice(0, 5)}` : ' · en curso'}
                 </p>
               </div>
