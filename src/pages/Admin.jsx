@@ -183,27 +183,40 @@ function EmpleadosAdmin() {
     }
   }
 
+  const campos = [
+    { key: 'nombre', label: 'Nombre' },
+    { key: 'apellido', label: 'Apellido' },
+    { key: 'legajo', label: 'Legajo' },
+    { key: 'dni', label: 'DNI' },
+    { key: 'cargo', label: 'Cargo' },
+    { key: 'sector', label: 'Sector' },
+    { key: 'username', label: 'Usuario' },
+    { key: 'password', label: editando ? 'Nueva contraseña (opcional)' : 'Contraseña', type: 'password' },
+  ];
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button style={s.btnP} onClick={abrirNuevo}>+ Agregar empleado</button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button style={s.btnP} onClick={abrirNuevo}>+ Nuevo empleado</button>
       </div>
       <div style={s.card}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
-            <th style={s.th}>Legajo</th>
             <th style={s.th}>Nombre</th>
-            <th style={s.th}>Cargo</th>
+            <th style={s.th}>Legajo</th>
             <th style={s.th}>Usuario</th>
+            <th style={s.th}>Cargo</th>
+            <th style={s.th}>Sector</th>
             <th style={s.th}>Admin</th>
-            <th style={s.th}>Acciones</th>
+            <th style={s.th}></th>
           </tr></thead>
           <tbody>{empleados.map(e => (
             <tr key={e.id}>
+              <td style={s.td}>{e.apellido}, {e.nombre}</td>
               <td style={s.td}>{e.legajo || '-'}</td>
-              <td style={s.td}>{e.nombre} {e.apellido}</td>
-              <td style={s.td}>{e.cargo || '-'}</td>
               <td style={s.td}>{e.username || '-'}</td>
+              <td style={s.td}>{e.cargo || '-'}</td>
+              <td style={s.td}>{e.sector || '-'}</td>
               <td style={s.td}>{e.es_admin_empresa ? '✓' : '-'}</td>
               <td style={s.td}>
                 <button style={{ ...s.btn, fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEditar(e)}>Editar</button>
@@ -211,24 +224,21 @@ function EmpleadosAdmin() {
             </tr>
           ))}</tbody>
         </table>
+        {empleados.length === 0 && <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: 20 }}>No hay empleados</p>}
       </div>
       {modal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: 460, maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: 15, marginBottom: '1rem' }}>{editando ? 'Editar empleado' : 'Nuevo empleado'}</h3>
-            {[
-              { k: 'nombre', label: 'Nombre *' },
-              { k: 'apellido', label: 'Apellido *' },
-              { k: 'legajo', label: 'Legajo' },
-              { k: 'dni', label: 'DNI' },
-              { k: 'cargo', label: 'Cargo' },
-              { k: 'sector', label: 'Sector' },
-              { k: 'username', label: 'Usuario *' },
-              { k: 'password', label: editando ? 'Nueva contrasena (vacio=no cambiar)' : 'Contrasena *', type: 'password' },
-            ].map(({ k, label, type = 'text' }) => (
-              <div key={k}>
-                <label style={s.label}>{label}</label>
-                <input style={s.input} type={type} value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', width: '100%', maxWidth: 420, maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3 style={{ fontSize: 15, marginBottom: '0.5rem' }}>{editando ? 'Editar empleado' : 'Nuevo empleado'}</h3>
+            {campos.map(c => (
+              <div key={c.key}>
+                <label style={s.label}>{c.label}</label>
+                <input
+                  style={s.input}
+                  type={c.type || 'text'}
+                  value={form[c.key]}
+                  onChange={e => setForm({ ...form, [c.key]: e.target.value })}
+                />
               </div>
             ))}
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -361,12 +371,135 @@ function SolicitudesAdmin() {
   );
 }
 
+// ===================== CUENTA CORRIENTE =====================
+function CuentaCteAdmin() {
+  const [pdfFile, setPdfFile] = useState(null);
+  const [periodo, setPeriodo] = useState('');
+  const [msg, setMsg] = useState('');
+  const [resultado, setResultado] = useState(null);
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    const d = new Date();
+    setPeriodo(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+  }, []);
+
+  async function procesarPDF() {
+    if (!pdfFile) { setMsg('Seleccioná el PDF primero'); return; }
+    if (!periodo) { setMsg('Ingresá el periodo'); return; }
+    setCargando(true); setMsg('Leyendo PDF...'); setResultado(null);
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdfBytes = new Uint8Array(arrayBuffer);
+      const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+      const totalPags = pdf.numPages;
+      setMsg(`Leyendo PDF... (${totalPags} páginas)`);
+
+      const saldos = [];
+
+      for (let i = 1; i <= totalPags; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const items = content.items.map(x => x.str.trim()).filter(Boolean);
+
+        for (let j = 0; j < items.length; j++) {
+          const item = items[j];
+          // Detectar código numérico de hasta 8 dígitos
+          if (/^\d{1,8}$/.test(item)) {
+            const codigo = item;
+            // Buscar saldo en los siguientes 25 items
+            let saldoEncontrado = null;
+            for (let k = j + 1; k < Math.min(j + 26, items.length); k++) {
+              // Formato argentino: 1.234,56 o 1.234.567,89
+              if (/^\d{1,3}(\.\d{3})*,\d{2}$/.test(items[k])) {
+                const saldoStr = items[k].replace(/\./g, '').replace(',', '.');
+                saldoEncontrado = parseFloat(saldoStr);
+                break;
+              }
+            }
+            if (saldoEncontrado !== null) {
+              // Evitar duplicados: tomar solo el primero por código
+              if (!saldos.find(x => x.codigo === codigo)) {
+                saldos.push({ codigo, saldo: saldoEncontrado });
+              }
+            }
+          }
+        }
+      }
+
+      if (saldos.length === 0) {
+        setMsg('No se encontraron saldos en el PDF. Verificá el formato.');
+        setCargando(false);
+        return;
+      }
+
+      setMsg(`Encontrados ${saldos.length} registros. Subiendo...`);
+      const r = await api.post('/admin/cuenta-corriente/subir', { periodo, saldos });
+      setMsg('Completado');
+      setResultado(r.data);
+    } catch (e) {
+      setMsg('Error: ' + e.message);
+    }
+    setCargando(false);
+  }
+
+  return (
+    <div style={s.card}>
+      <h3 style={{ fontSize: 15, marginBottom: '0.5rem' }}>Subir PDF de cuenta corriente</h3>
+      <p style={{ fontSize: 12, color: '#888', marginBottom: '1rem' }}>
+        El PDF debe contener el código de cliente y el saldo en formato argentino (ej: 4.751.184,77).
+        Cada empleado debe tener asignado su código de cliente en el panel de Empleados.
+      </p>
+      <label style={s.label}>Periodo (YYYY-MM)</label>
+      <input style={{ ...s.input, maxWidth: 200 }} value={periodo} onChange={e => setPeriodo(e.target.value)} placeholder="2026-06" />
+      <label style={s.label}>Archivo PDF</label>
+      <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])} style={{ marginBottom: 12 }} />
+      {pdfFile && <div style={{ fontSize: 12, color: '#1D9E75', marginBottom: 8 }}>{pdfFile.name}</div>}
+      <br />
+      <button style={s.btnP} onClick={procesarPDF} disabled={cargando}>
+        {cargando ? 'Procesando...' : 'Procesar y subir saldos'}
+      </button>
+      {msg && (
+        <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, fontSize: 13,
+          background: msg.startsWith('Error') || msg.startsWith('No se') || msg.startsWith('Selec') || msg.startsWith('Ingres') ? '#FCEBEB' : '#E1F5EE',
+          color: msg.startsWith('Error') || msg.startsWith('No se') || msg.startsWith('Selec') || msg.startsWith('Ingres') ? '#A32D2D' : '#0F6E56' }}>
+          {msg}
+        </div>
+      )}
+      {resultado && (
+        <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          <div style={{ background: '#E1F5EE', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#0F6E56' }}>{resultado.procesados}</div>
+            <div style={{ fontSize: 12 }}>Saldos actualizados</div>
+          </div>
+          <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{resultado.saltados}</div>
+            <div style={{ fontSize: 12 }}>Saltados</div>
+          </div>
+          <div style={{ background: '#f0f0f0', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{(resultado.procesados || 0) + (resultado.saltados || 0)}</div>
+            <div style={{ fontSize: 12 }}>Total encontrados</div>
+          </div>
+          {resultado.noEncontrados?.length > 0 && (
+            <div style={{ gridColumn: '1/-1', background: '#FAEEDA', borderRadius: 8, padding: '10px', fontSize: 12, color: '#854F0B' }}>
+              Códigos no encontrados en empleados: {resultado.noEncontrados.join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ===================== PANEL PRINCIPAL =====================
 const TABS = [
   { key: 'recibos', label: 'Recibos' },
   { key: 'empleados', label: 'Empleados' },
   { key: 'fichajes', label: 'Fichajes' },
   { key: 'solicitudes', label: 'Solicitudes' },
+  { key: 'cuentacte', label: 'Cta. Corriente' },
 ];
 
 export default function Admin() {
@@ -394,7 +527,7 @@ export default function Admin() {
         <button style={{ ...s.btn, color: '#A32D2D' }} onClick={handleLogout}>Salir</button>
       </div>
       <div style={{ padding: '24px', maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #e5e5e5' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #e5e5e5', flexWrap: 'wrap' }}>
           {TABS.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               style={{ padding: '10px 20px', borderRadius: '8px 8px 0 0', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === t.key ? 600 : 400,
@@ -409,6 +542,7 @@ export default function Admin() {
         {tab === 'empleados' && <EmpleadosAdmin />}
         {tab === 'fichajes' && <FichajesAdmin />}
         {tab === 'solicitudes' && <SolicitudesAdmin />}
+        {tab === 'cuentacte' && <CuentaCteAdmin />}
       </div>
     </div>
   );
